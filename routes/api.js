@@ -30,8 +30,6 @@ router.get('/melolo/latest', async (req, res) => {
     try {
         res.set('Cache-Control', 'public, max-age=600');
         const result = await meloloLatest();
-        // meloloLatest sudah return { status: true, data: { books: [] } }
-        // Jadi langsung return saja, jangan wrap lagi
         res.json(result);
     } catch (error) {
         console.error("Melolo Latest Error:", error.message);
@@ -70,8 +68,8 @@ router.get('/melolo/detail/:seriesId', async (req, res) => {
     try {
         res.set('Cache-Control', 'public, max-age=3600');
         const { seriesId } = req.params;
+        console.log(`[Melolo Detail] Fetching seriesId: ${seriesId}`);
         const result = await meloloDetail(seriesId);
-        // meloloDetail return raw response dari API, sudah benar
         res.json(result);
     } catch (error) {
         console.error("Melolo Detail Error:", error.message);
@@ -84,6 +82,7 @@ router.get('/melolo/stream/:videoId', async (req, res) => {
     try {
         res.set('Cache-Control', 'no-cache');
         const { videoId } = req.params;
+        console.log(`[Melolo Stream] Fetching videoId: ${videoId}`);
         const result = await meloloLinkStream(videoId);
         res.json(result);
     } catch (error) {
@@ -184,16 +183,25 @@ router.get('/search', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
-// DETAIL V2 (FIX JUMLAH EPISODE)
+// DETAIL V2 (FIX JUMLAH EPISODE) + MELOLO FALLBACK
 router.get(['/detail/:bookId', '/detail/:bookId/v2'], async (req, res) => {
     try {
         res.set('Cache-Control', 'public, max-age=3600');
         const source = req.query.source || req.query.server || 'dramabox';
+        const bookId = req.params.bookId;
+        
+        // ✅ Handle Melolo Provider
+        if (source === 'melolo') {
+            console.log(`[Detail Fallback] Routing melolo provider to /api/melolo/detail/${bookId}`);
+            const result = await meloloDetail(bookId);
+            return res.json(result);
+        }
+        
         if (source === 'netshort') {
-            const nsData = await nsDetail(req.params.bookId);
+            const nsData = await nsDetail(bookId);
             return res.json({
                 ...nsData,
-                id: req.params.bookId, source: 'netshort',
+                id: bookId, source: 'netshort',
                 name: nsData.shortPlayName || nsData.name, cover: nsData.shortPlayCover || nsData.cover,
                 chapters: (nsData.chapters || []).map(ch => ({ ...ch, url: ch.url || null }))
             });
@@ -201,9 +209,7 @@ router.get(['/detail/:bookId', '/detail/:bookId/v2'], async (req, res) => {
         
         // DRAMABOX LOGIC
         const dramabox = new Dramabox('in');
-        
-        // Panggil fungsi gabungan (Webfic + Batch 1)
-        const fullData = await dramabox.getChaptersWithMetadata(req.params.bookId);
+        const fullData = await dramabox.getChaptersWithMetadata(bookId);
         
         const d = fullData.metadata || {};
         const chs = fullData.chapters || [];
@@ -212,27 +218,25 @@ router.get(['/detail/:bookId', '/detail/:bookId/v2'], async (req, res) => {
         const finalCover = d.cover || d.coverWap || "https://placehold.co/300x450?text=No+Cover";
         const finalIntro = d.introduction || d.briefIntroduction || "Sinopsis tidak tersedia.";
         
-        // Format chapter agar seragam
         const formattedChapters = chs.map(ch => ({
             id: ch.id,
             index: ch.index,
             name: ch.name || `Episode ${ch.index + 1}`,
             url: ch.url ? createProxyUrl(ch.url) : null,
-            videoPath: ch.url // Simpan raw url juga
+            videoPath: ch.url
         }));
 
-        // Struktur respon standar
         return res.json({ 
             status: true, 
             success: true, 
             data: {
-                id: req.params.bookId,
-                bookId: req.params.bookId,
+                id: bookId,
+                bookId: bookId,
                 source: 'dramabox',
                 name: finalName,
                 cover: finalCover,
                 introduction: finalIntro,
-                chapters: formattedChapters, // List lengkap 1-tamat
+                chapters: formattedChapters,
                 episode_count: formattedChapters.length
             }
         });
