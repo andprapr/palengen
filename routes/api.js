@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Settings } from '../lib/db.js'; 
 import Dramabox from '../lib/dramabox-class.js'; 
 import { allepisode as nsDetail, search as nsSearch, foryou as nsHome } from '../lib/netshort.js';
+import { meloloSearch, meloloDetail, meloloLinkStream, meloloLatest, meloloTrending } from '../lib/melolo.js';
 
 const router = Router();
 
@@ -19,6 +20,78 @@ const formatNetshortItem = (item) => ({
     introduction: item.introduction || "Sinopsis tidak tersedia.",
     playCount: item.heatScoreShow || "", tags: item.labelArray || [], status: 1
 });
+
+// ============================================
+// MELOLO ROUTES
+// ============================================
+
+// GET /api/melolo/latest - Drama Terbaru
+router.get('/melolo/latest', async (req, res) => {
+    try {
+        res.set('Cache-Control', 'public, max-age=600');
+        const result = await meloloLatest();
+        res.json({ status: true, success: true, data: result });
+    } catch (error) {
+        console.error("Melolo Latest Error:", error.message);
+        res.status(500).json({ status: false, error: 'Terjadi kesalahan pada server', message: error.message });
+    }
+});
+
+// GET /api/melolo/trending - Drama Trending
+router.get('/melolo/trending', async (req, res) => {
+    try {
+        res.set('Cache-Control', 'public, max-age=600');
+        const result = await meloloTrending();
+        res.json({ status: true, success: true, data: result });
+    } catch (error) {
+        console.error("Melolo Trending Error:", error.message);
+        res.status(500).json({ status: false, error: 'Terjadi kesalahan pada server', message: error.message });
+    }
+});
+
+// GET /api/melolo/search?query=namafilm&limit=10&offset=0 - Cari Drama
+router.get('/melolo/search', async (req, res) => {
+    try {
+        const { query, limit = 10, offset = 0 } = req.query;
+        if (!query) return res.status(400).json({ status: false, error: 'Parameter "query" dibutuhkan' });
+        
+        const result = await meloloSearch(query, parseInt(limit), parseInt(offset));
+        res.json({ status: true, success: true, data: result });
+    } catch (error) {
+        console.error("Melolo Search Error:", error.message);
+        res.status(500).json({ status: false, error: 'Terjadi kesalahan pada server', message: error.message });
+    }
+});
+
+// GET /api/melolo/detail/:seriesId - Detail Drama
+router.get('/melolo/detail/:seriesId', async (req, res) => {
+    try {
+        res.set('Cache-Control', 'public, max-age=3600');
+        const { seriesId } = req.params;
+        const result = await meloloDetail(seriesId);
+        res.json({ status: true, success: true, data: result });
+    } catch (error) {
+        console.error("Melolo Detail Error:", error.message);
+        res.status(500).json({ status: false, error: 'Terjadi kesalahan pada server', message: error.message });
+    }
+});
+
+// GET /api/melolo/stream/:videoId - Stream Drama
+router.get('/melolo/stream/:videoId', async (req, res) => {
+    try {
+        res.set('Cache-Control', 'no-cache');
+        const { videoId } = req.params;
+        const result = await meloloLinkStream(videoId);
+        res.json({ status: true, success: true, data: result });
+    } catch (error) {
+        console.error("Melolo Stream Error:", error.message);
+        res.status(500).json({ status: false, error: 'Terjadi kesalahan pada server', message: error.message });
+    }
+});
+
+// ============================================
+// EXISTING ROUTES (NetShort, DramaBox, etc.)
+// ============================================
 
 // PROXY VIDEO
 router.get('/proxy', async (req, res) => {
