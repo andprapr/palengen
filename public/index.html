@@ -191,7 +191,21 @@
         }
 
         const PROVIDERS = { 
-            'netshort': { name: 'NetShort', apiBase: '/api/netshort', listPath: '/api/netshort/foryou?page=', searchPath: '/api/netshort/search?query=', color: 'bg-gradient-to-br from-red-600 to-red-800', text: 'NS', theme: { badge: 'bg-red-600/90', tabActive: 'bg-red-600 border-red-600 shadow-[0_0_10px_rgba(220,38,38,0.4)]', spinner: 'border-t-red-600', hover: 'hover:bg-red-600', text: 'text-red-500' } }, 
+            'netshort': { 
+                name: 'NetShort', 
+                apiBase: '/api/netshort', 
+                listPath: '/api/netshort/foryou?page=', 
+                searchPath: '/api/netshort/search?query=', 
+                color: 'bg-gradient-to-br from-red-600 to-red-800', 
+                text: 'NS', 
+                theme: { 
+                    badge: 'bg-red-600/90', 
+                    tabActive: 'bg-red-600 border-red-600 shadow-[0_0_10px_rgba(220,38,38,0.4)]', 
+                    spinner: 'border-t-red-600', 
+                    hover: 'hover:bg-red-600', 
+                    text: 'text-red-500' 
+                } 
+            }, 
             'dramabox': { 
                 name: 'DramaBox', 
                 listPath: '/api/dramabox/foryou?page=', 
@@ -199,8 +213,28 @@
                 vipPath: '/api/vip',
                 color: 'bg-gradient-to-br from-orange-500 to-orange-700', 
                 text: 'DB', 
-                theme: { badge: 'bg-orange-600/90', tabActive: 'bg-orange-600 border-orange-600 shadow-[0_0_10px_rgba(234,88,12,0.4)]', spinner: 'border-t-orange-600', hover: 'hover:bg-orange-600', text: 'text-orange-500' } 
-            } 
+                theme: { 
+                    badge: 'bg-orange-600/90', 
+                    tabActive: 'bg-orange-600 border-orange-600 shadow-[0_0_10px_rgba(234,88,12,0.4)]', 
+                    spinner: 'border-t-orange-600', 
+                    hover: 'hover:bg-orange-600', 
+                    text: 'text-orange-500' 
+                } 
+            },
+            'melolo': {
+                name: 'Melolo',
+                listPath: '/api/melolo/latest',
+                searchPath: '/api/melolo/search?query=',
+                color: 'bg-gradient-to-br from-purple-600 to-purple-800',
+                text: 'ML',
+                theme: {
+                    badge: 'bg-purple-600/90',
+                    tabActive: 'bg-purple-600 border-purple-600 shadow-[0_0_10px_rgba(147,51,234,0.4)]',
+                    spinner: 'border-t-purple-600',
+                    hover: 'hover:bg-purple-600',
+                    text: 'text-purple-500'
+                }
+            }
         };
         
         let activeProviderKey = 'netshort', currentPage = 1, currentTab = 'all', currentDramaData = null, currentEpisodeIndex = 0, idleTimer = null;
@@ -370,20 +404,44 @@
             setLoading(true); 
             try { 
                 const provider = PROVIDERS[activeProviderKey];
-                const res = await fetch(`${provider.listPath}${page}`); 
+                let url = '';
+                
+                // Melolo tidak pakai pagination
+                if (activeProviderKey === 'melolo') {
+                    url = provider.listPath;
+                } else {
+                    url = `${provider.listPath}${page}`;
+                }
+                
+                const res = await fetch(url); 
                 if(!res.ok) throw new Error("Gagal mengambil data"); 
                 const json = await res.json(); 
                 let dramas = [];
-                if (activeProviderKey === 'dramabox') {
+                
+                if (activeProviderKey === 'melolo') {
+                    // Melolo structure: books array
+                    if (json.status && json.data && json.data.books) {
+                        dramas = json.data.books;
+                    } else {
+                        dramas = findDramasDeep(json);
+                    }
+                } else if (activeProviderKey === 'dramabox') {
                     if (json.data && json.data.book) dramas = json.data.book;
                     else if (Array.isArray(json.data)) dramas = json.data;
                     else dramas = findDramasDeep(json); 
                 } else {
                     dramas = findDramasDeep(json);
                 }
-                dramas = [...new Map(dramas.map(item => [item.shortPlayId || item.id || item.bookId, item])).values()]; 
+                
+                dramas = [...new Map(dramas.map(item => [item.shortPlayId || item.id || item.bookId || item.book_id, item])).values()]; 
                 renderGrid(dramas); 
-                renderPaginationButtons(); 
+                
+                // Melolo tidak pakai pagination
+                if (activeProviderKey === 'melolo') {
+                    document.getElementById('pagination').classList.add('hidden');
+                } else {
+                    renderPaginationButtons(); 
+                }
             } catch (error) { 
                 document.getElementById('contentArea').innerHTML = `<div class="text-center text-gray-500 mt-20 px-4">${error.message}</div>`; 
                 document.getElementById('pagination').classList.add('hidden'); 
@@ -395,21 +453,42 @@
             setLoading(true);
             try {
                 const provider = PROVIDERS[activeProviderKey];
-                const res = await fetch(`${provider.searchPath}${encodeURIComponent(query)}`);
+                let url = '';
+                
+                if (activeProviderKey === 'melolo') {
+                    url = `${provider.searchPath}${encodeURIComponent(query)}&limit=20&offset=0`;
+                } else {
+                    url = `${provider.searchPath}${encodeURIComponent(query)}`;
+                }
+                
+                const res = await fetch(url);
                 const data = await res.json();
                 let dramas = [];
-                if (activeProviderKey === 'dramabox') {
+                
+                if (activeProviderKey === 'melolo') {
+                    if (data.data && data.data.books) {
+                        dramas = data.data.books;
+                    } else {
+                        dramas = findDramasDeep(data);
+                    }
+                } else if (activeProviderKey === 'dramabox') {
                     if (data.data && data.data.book) dramas = data.data.book;
                     else dramas = findDramasDeep(data);
                 } else {
                     dramas = findDramasDeep(data);
                 }
+                
                 if(dramas.length === 0) { 
-                    const recRes = await fetch(`${provider.listPath}1`);
+                    const recRes = await fetch(`${provider.listPath}${activeProviderKey === 'melolo' ? '' : '1'}`);
                     const recJson = await recRes.json();
                     let recDramas = [];
-                    if (activeProviderKey === 'dramabox') recDramas = (recJson.data && recJson.data.book) ? recJson.data.book : findDramasDeep(recJson);
-                    else recDramas = findDramasDeep(recJson);
+                    if (activeProviderKey === 'melolo') {
+                        recDramas = (recJson.data && recJson.data.books) ? recJson.data.books : findDramasDeep(recJson);
+                    } else if (activeProviderKey === 'dramabox') {
+                        recDramas = (recJson.data && recJson.data.book) ? recJson.data.book : findDramasDeep(recJson);
+                    } else {
+                        recDramas = findDramasDeep(recJson);
+                    }
                     renderGrid(recDramas);
                     const container = document.getElementById('contentArea');
                     const msgDiv = document.createElement('div');
@@ -445,7 +524,25 @@
                 let detail = {}, episodes = [];
                 let title, desc, cover;
 
-                if (targetProvider === 'dramabox') {
+                if (targetProvider === 'melolo') {
+                    const res = await fetch(`/api/melolo/detail/${id}`);
+                    const json = await res.json();
+                    const data = json.data || {};
+                    const videoList = data.video_list || [];
+                    
+                    title = data.series_name || "Tanpa Judul";
+                    desc = data.abstract || "Tidak ada sinopsis.";
+                    cover = data.thumb_url || "";
+                    episodes = videoList;
+                    
+                    currentDramaData = {
+                        shortPlayId: id,
+                        shortPlayName: title,
+                        shortPlayCover: cover,
+                        episodes: episodes,
+                        provider: 'melolo'
+                    };
+                } else if (targetProvider === 'dramabox') {
                     const res = await fetch(`/api/detail/${id}/v2?lang=in`);
                     const json = await res.json();
                     const data = json.data || json; 
@@ -476,7 +573,7 @@
                 const history = getHistory().find(h => h.id === id);
                 const btnPlay = document.getElementById('btnPlayMain');
                 const lastWatchedBox = document.getElementById('lastWatchedInfo');
-                const themeClass = targetProvider === 'dramabox' ? 'bg-orange-600 hover:bg-orange-700' : 'bg-red-600 hover:bg-red-700';
+                const themeClass = targetProvider === 'dramabox' ? 'bg-orange-600 hover:bg-orange-700' : (targetProvider === 'melolo' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-red-600 hover:bg-red-700');
                 
                 btnPlay.className = `flex-1 ${themeClass} text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition transform hover:scale-[1.02] shadow-lg text-sm md:text-base`;
                 
@@ -498,11 +595,12 @@
             if (!currentDramaData) return;
 
             closeInfoModal();
+            const isMelolo = currentDramaData.provider === 'melolo';
             const isDramabox = currentDramaData.provider === 'dramabox';
             const title = currentDramaData.shortPlayName;
             const cover = currentDramaData.shortPlayCover;
             const id = currentDramaData.shortPlayId;
-            const episodes = isDramabox ? currentDramaData.episodes : (currentDramaData.shortPlayEpisodeInfos || currentDramaData.data.shortPlayEpisodeInfos);
+            const episodes = isMelolo ? currentDramaData.episodes : (isDramabox ? currentDramaData.episodes : (currentDramaData.shortPlayEpisodeInfos || currentDramaData.data.shortPlayEpisodeInfos));
 
             document.getElementById('playerTitle').innerText = title;
             document.getElementById('totalEpBadge').innerText = `${episodes.length} Eps`;
@@ -514,15 +612,24 @@
             const drawer = document.getElementById('episodeDrawer');
             drawer.classList.add('drawer-closed'); drawer.classList.remove('drawer-open');
             
-            const activeClass = isDramabox ? 'bg-orange-600 text-white border-orange-600' : 'bg-red-600 text-white border-red-600';
-            const hoverClass = isDramabox ? 'hover:bg-orange-600/20 hover:border-orange-500' : 'hover:bg-red-600/20 hover:border-red-500';
+            const activeClass = isMelolo ? 'bg-purple-600 text-white border-purple-600' : (isDramabox ? 'bg-orange-600 text-white border-orange-600' : 'bg-red-600 text-white border-red-600');
+            const hoverClass = isMelolo ? 'hover:bg-purple-600/20 hover:border-purple-500' : (isDramabox ? 'hover:bg-orange-600/20 hover:border-orange-500' : 'hover:bg-red-600/20 hover:border-red-500');
 
             videoEl.onended = () => { const nextIdx = currentEpisodeIndex + 1; if (epListEl.children[nextIdx]) { epListEl.children[nextIdx].scrollIntoView({ behavior: 'smooth', block: 'center' }); epListEl.children[nextIdx].click(); } };
 
             if (episodes.length > 0) {
                 episodes.forEach((ep, idx) => {
                     const btn = document.createElement('button');
-                    const epNum = isDramabox ? ((typeof ep.index === 'number') ? ep.index + 1 : idx + 1) : (ep.episodeNo || idx + 1);
+                    let epNum;
+                    
+                    if (isMelolo) {
+                        epNum = ep.episode_index || idx + 1;
+                    } else if (isDramabox) {
+                        epNum = (typeof ep.index === 'number') ? ep.index + 1 : idx + 1;
+                    } else {
+                        epNum = ep.episodeNo || idx + 1;
+                    }
+                    
                     btn.innerText = epNum;
                     btn.className = `py-3 rounded-lg text-sm font-bold transition border border-white/5 bg-[#252525] text-gray-300 ${hoverClass}`;
                     
@@ -533,7 +640,30 @@
                         
                         saveToHistory(id, title, cover, idx, epNum, currentDramaData.provider);
                         
-                        if (isDramabox) {
+                        if (isMelolo) {
+                            subStatus.innerText = "PLAYING";
+                            videoEl.innerHTML = "";
+                            try {
+                                const res = await fetch(`/api/melolo/stream/${ep.vid}`);
+                                const json = await res.json();
+                                if (json.status && json.data && json.data.video_list) {
+                                    const videoList = json.data.video_list;
+                                    const video = videoList.find(v => v.definition === '720p') || videoList[0];
+                                    if (video && video.main_url) {
+                                        videoEl.src = video.main_url;
+                                        videoEl.play();
+                                    } else {
+                                        alert("Link video tidak ditemukan.");
+                                    }
+                                } else {
+                                    alert("Link video tidak tersedia.");
+                                }
+                            } catch (err) {
+                                alert("Gagal memuat video.");
+                            }
+                            
+                            if (e && e.isTrusted && window.innerWidth < 1024) toggleEpisodeDrawer();
+                        } else if (isDramabox) {
                             subStatus.innerText = "PLAYING";
                             videoEl.innerHTML = ""; 
                             let streamUrl = ep.url;
@@ -611,9 +741,9 @@
                 return found; 
             } 
             if (typeof obj === 'object') { 
-                const title = obj.shortPlayName || obj.title || obj.name || obj.bookName; 
-                const cover = obj.shortPlayCover || obj.coverUrl || obj.imgUrl || obj.cover; 
-                const id = obj.shortPlayId || obj.bookId || obj.id; 
+                const title = obj.shortPlayName || obj.title || obj.name || obj.bookName || obj.book_name; 
+                const cover = obj.shortPlayCover || obj.coverUrl || obj.imgUrl || obj.cover || obj.thumb_url; 
+                const id = obj.shortPlayId || obj.bookId || obj.id || obj.book_id; 
                 if (title && cover && id) found.push(obj); 
                 Object.values(obj).forEach(val => { 
                     if (typeof val === 'object') findDramasDeep(val, found); 
@@ -686,14 +816,16 @@
             const grid = document.createElement('div'); 
             grid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6"; 
             const theme = PROVIDERS[activeProviderKey].theme; 
+            const isMelolo = activeProviderKey === 'melolo';
+            
             items.forEach((item, idx) => { 
-                const id = item.shortPlayId || item.id || item.bookId; 
-                const title = item.shortPlayName || item.title || item.name || item.bookName; 
-                const cover = item.shortPlayCover || item.coverUrl || item.cover; 
-                const stats = item.heatScoreShow || "HOT"; 
+                const id = item.shortPlayId || item.id || item.bookId || item.book_id; 
+                const title = item.shortPlayName || item.title || item.name || item.bookName || item.book_name; 
+                const cover = item.shortPlayCover || item.coverUrl || item.cover || item.thumb_url; 
+                const stats = isMelolo ? (item.play_count || "HOT") : (item.heatScoreShow || "HOT"); 
                 const labels = item.labelArray || []; 
                 const isDub = labels.some(l => /sulih|suara|dubbing|indo|bahasa/i.test(l)) || title.toLowerCase().includes('indo') || currentTab === 'dub'; 
-                const isNew = item.isNewLabel === true || currentTab === 'new'; 
+                const isNew = item.isNewLabel === true || item.is_new_book === "1" || currentTab === 'new'; 
                 let badges = `<span class="${theme.badge} text-white text-[9px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm shadow-sm">🔥 ${stats}</span>`; 
                 if (isDub) badges = `<span class="bg-blue-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm mb-1 block w-fit">🇮🇩 INDO</span>` + badges; 
                 if (isNew) badges = `<span class="bg-green-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm mb-1 block w-fit">NEW</span>` + badges; 
