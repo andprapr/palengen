@@ -4,481 +4,242 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StreamHub Admin Dashboard</title>
-    <!-- Content Security Policy untuk prevent XSS -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; img-src 'self' https: data:; font-src 'self' https:;">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
         .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-        .dot-green { background-color: #22c55e; box-shadow: 0 0 8px #22c55e; }
-        .dot-red { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
-        .dot-yellow { background-color: #eab308; box-shadow: 0 0 8px #eab308; }
-        @keyframes pulse-glow { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
-        .animate-pulse-custom { animation: pulse-glow 2s infinite; }
-        /* Style Input Custom */
-        .input-dark { width: 100%; background-color: #0f0f0f; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; padding: 0.75rem 1rem; color: #e5e7eb; font-size: 0.875rem; transition: all 0.3s; }
-        .input-dark:focus { outline: none; border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2); }
-        .btn-login { cursor: pointer; }
-        .btn-login:active { opacity: 0.9; }
+        .dot-green { background-color: #22c55e; }
+        .dot-red { background-color: #ef4444; }
+        .dot-yellow { background-color: #eab308; }
+        .input-dark { width: 100%; background-color: #0f0f0f; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; padding: 0.75rem 1rem; color: #e5e7eb; font-size: 0.875rem; }
+        .input-dark:focus { outline: 2px solid #ef4444; }
     </style>
 </head>
-<body class="bg-[#050505] text-gray-200 font-sans antialiased min-h-screen p-6 md:p-12">
+<body class="bg-[#050505] text-gray-200 min-h-screen">
 
-    <!-- LOGIN MODAL (Muncul jika belum login) -->
-    <div id="loginModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-        <div class="bg-[#1a1a1a] border border-white/10 rounded-2xl p-8 max-w-md w-full shadow-2xl">
-            <div class="flex items-center justify-center mb-6">
-                <div class="w-12 h-12 bg-gradient-to-br from-red-700 to-red-900 rounded-xl flex items-center justify-center font-bold text-white text-xl shadow-lg shadow-red-900/40">SH</div>
+    <!-- LOGIN PAGE -->
+    <div id="loginPage" class="fixed inset-0 bg-[#050505] flex items-center justify-center">
+        <div class="bg-[#1a1a1a] border border-white/10 rounded-2xl p-8 max-w-sm w-full">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-br from-red-700 to-red-900 rounded-xl flex items-center justify-center font-bold text-white text-2xl mx-auto mb-4">SH</div>
+                <h1 class="text-2xl font-bold text-white">StreamHub Admin</h1>
+                <p class="text-gray-500 text-sm mt-2">Masukkan password untuk akses</p>
             </div>
-            <h2 class="text-2xl font-bold text-white text-center mb-2">StreamHub Admin</h2>
-            <p class="text-gray-500 text-center text-sm mb-6">Masukkan password untuk melanjutkan</p>
             
             <div class="mb-6">
-                <label class="block text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">Password Admin</label>
-                <input type="password" id="adminPassword" placeholder="Masukkan password" class="input-dark" />
-                <p id="loginError" class="text-xs text-red-500 mt-2 hidden">Password salah!</p>
+                <label class="text-xs text-gray-400 block mb-2">Password</label>
+                <input type="password" id="pwd" placeholder="Masukkan password" class="input-dark">
+                <div id="msg" class="text-xs text-red-500 mt-2"></div>
             </div>
             
-            <button id="loginBtn" type="button" class="w-full bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-lg shadow-red-900/20 btn-login">Login</button>
+            <button onclick="doLogin()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg transition">Login</button>
         </div>
     </div>
 
-    <!-- MAIN CONTENT (Tersembunyi sebelum login) -->
-    <div id="mainContent" class="hidden">
-        <header class="flex justify-between items-center mb-12 max-w-6xl mx-auto">
+    <!-- DASHBOARD PAGE -->
+    <div id="dashPage" class="hidden p-8 max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-12">
             <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-red-700 to-red-900 rounded-xl flex items-center justify-center font-bold text-white text-xl shadow-lg shadow-red-900/40">SH</div>
-                <div><h1 class="text-2xl font-bold tracking-tight text-white">StreamHub <span class="text-gray-600 font-normal">Admin</span></h1></div>
+                <div class="w-12 h-12 bg-gradient-to-br from-red-700 to-red-900 rounded-xl flex items-center justify-center font-bold text-white text-xl">SH</div>
+                <h1 class="text-2xl font-bold text-white">StreamHub <span class="text-gray-500 font-normal">Admin</span></h1>
             </div>
-            <div class="flex items-center gap-4">
-                <a href="index.html" target="_blank" class="text-sm text-gray-500 hover:text-white transition flex items-center gap-2 border border-white/10 px-4 py-2 rounded-lg hover:bg-white/5">
-                    Lihat Website <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                </a>
-                <button id="logoutBtn" type="button" class="text-sm text-gray-500 hover:text-red-400 transition flex items-center gap-2 border border-white/10 px-4 py-2 rounded-lg hover:bg-red-900/10">
-                    Logout <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                </button>
-            </div>
+            <button onclick="doLogout()" class="text-sm bg-red-600/20 hover:bg-red-600/40 text-red-400 px-4 py-2 rounded-lg">Logout</button>
         </header>
 
-        <main class="max-w-6xl mx-auto space-y-10">
+        <div class="space-y-8">
+            <!-- API STATUS -->
             <section>
-                <div class="flex justify-between items-end mb-6">
-                    <div><h2 class="text-xl font-bold text-white">Status Server API</h2><p class="text-gray-500 text-sm mt-1">Monitor kesehatan koneksi provider drama real-time.</p></div>
-                    <button id="refreshStatusBtn" type="button" class="bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-2 border border-white/10 hover:border-white/30"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>Refresh Status</button>
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-white">Status Server API</h2>
+                        <p class="text-gray-500 text-sm">Monitor kesehatan provider</p>
+                    </div>
+                    <button onclick="refreshStatus()" class="text-sm bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg">Refresh</button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="glass-panel rounded-2xl p-8 relative overflow-hidden group hover:bg-white/[0.02] transition duration-500">
-                        <div class="flex items-start justify-between mb-8 relative z-10">
-                            <div class="flex items-center gap-4">
-                                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-red-900/40">NS</div>
-                                <div><h3 class="font-bold text-xl text-white">NetShort</h3><div class="flex items-center gap-2 mt-1" id="status-netshort"><span class="status-dot bg-gray-600"></span> <span class="text-xs text-gray-500 font-mono tracking-wide">WAITING...</span></div></div>
-                            </div>
-                            <div class="text-right"><div class="text-4xl font-bold text-white tracking-tight" id="count-netshort">-</div><div class="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-1">Total Film (Est)</div></div>
+                    <div class="glass-panel p-6 rounded-lg">
+                        <h3 class="text-lg font-bold text-white mb-2">NetShort</h3>
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="status-dot dot-yellow"></span>
+                            <span id="ns-status" class="text-sm text-gray-400">Checking...</span>
                         </div>
-                        <div class="bg-black/40 rounded-xl p-4 flex justify-between items-center text-xs text-gray-400 border border-white/5 relative z-10 backdrop-blur-md">
-                            <div class="flex items-center gap-2"><span>Latency:</span><span id="ping-netshort" class="text-white font-mono font-bold">-</span></div>
-                            <div class="flex items-center gap-2"><span class="opacity-50">Endpoint:</span><span class="text-gray-500 font-mono">/api/netshort</span></div>
-                        </div>
+                        <div class="text-3xl font-bold text-white" id="ns-count">-</div>
+                        <div class="text-xs text-gray-500 mt-2">Ping: <span id="ns-ping">-</span></div>
                     </div>
-                    <div class="glass-panel rounded-2xl p-8 relative overflow-hidden group hover:bg-white/[0.02] transition duration-500">
-                        <div class="flex items-start justify-between mb-8 relative z-10">
-                            <div class="flex items-center gap-4">
-                                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-orange-900/40">DB</div>
-                                <div><h3 class="font-bold text-xl text-white">DramaBox</h3><div class="flex items-center gap-2 mt-1" id="status-dramabox"><span class="status-dot bg-gray-600"></span> <span class="text-xs text-gray-500 font-mono tracking-wide">WAITING...</span></div></div>
-                            </div>
-                            <div class="text-right"><div class="text-4xl font-bold text-white tracking-tight" id="count-dramabox">-</div><div class="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-1">Total Film (Est)</div></div>
+                    <div class="glass-panel p-6 rounded-lg">
+                        <h3 class="text-lg font-bold text-white mb-2">DramaBox</h3>
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="status-dot dot-yellow"></span>
+                            <span id="db-status" class="text-sm text-gray-400">Checking...</span>
                         </div>
-                        <div class="bg-black/40 rounded-xl p-4 flex justify-between items-center text-xs text-gray-400 border border-white/5 relative z-10 backdrop-blur-md">
-                            <div class="flex items-center gap-2"><span>Latency:</span><span id="ping-dramabox" class="text-white font-mono font-bold">-</span></div>
-                            <div class="flex items-center gap-2"><span class="opacity-50">Endpoint:</span><span class="text-gray-500 font-mono">/api/dramabox</span></div>
-                        </div>
+                        <div class="text-3xl font-bold text-white" id="db-count">-</div>
+                        <div class="text-xs text-gray-500 mt-2">Ping: <span id="db-ping">-</span></div>
                     </div>
                 </div>
             </section>
 
-            <section class="glass-panel rounded-2xl p-8 border border-white/10 mt-8 relative">
-                <div class="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
+            <!-- SETTINGS -->
+            <section class="glass-panel p-8 rounded-lg">
+                <div class="flex justify-between items-center mb-6 pb-4 border-b border-white/10">
                     <div>
-                        <h3 class="font-bold text-xl text-white">Pengaturan Website</h3>
-                        <p class="text-xs text-gray-500 mt-1">Sesuaikan tampilan depan website Anda.</p>
+                        <h2 class="text-xl font-bold text-white">Pengaturan Website</h2>
+                        <p class="text-gray-500 text-sm">Kelola konfigurasi website</p>
                     </div>
-                    <button id="saveSettingsBtn" type="button" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-lg shadow-red-900/20 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                        Simpan Perubahan
-                    </button>
+                    <button onclick="saveSettings()" class="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-2 rounded-lg">Simpan</button>
                 </div>
                 
                 <div class="grid gap-6 md:grid-cols-2">
                     <div>
-                        <label class="block text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">Judul Website</label>
-                        <input type="text" id="siteName" placeholder="Contoh: StreamHub123" class="input-dark" maxlength="100">
+                        <label class="text-sm text-gray-400 block mb-2">Judul Website</label>
+                        <input type="text" id="siteName" class="input-dark" maxlength="100">
                     </div>
-                    
                     <div>
-                        <label class="block text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">Tagline (Slogan)</label>
-                        <input type="text" id="siteTagline" placeholder="Contoh: Nonton Drama China Terlengkap" class="input-dark" maxlength="150">
+                        <label class="text-sm text-gray-400 block mb-2">Deskripsi</label>
+                        <input type="text" id="siteDesc" class="input-dark" maxlength="200">
                     </div>
-
                     <div class="md:col-span-2">
-                        <label class="block text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">URL Logo (Opsional)</label>
-                        <div class="flex gap-2">
-                            <input type="url" id="siteLogo" placeholder="https://..." class="input-dark flex-1">
-                            <div class="w-10 h-10 bg-white/5 rounded border border-white/10 flex items-center justify-center shrink-0">
-                                <img id="logoPreview" class="w-8 h-8 object-contain hidden">
-                                <span id="logoPlaceholder" class="text-xs text-gray-600">Img</span>
-                            </div>
-                        </div>
-                        <p class="text-[10px] text-gray-600 mt-1">*Hanya URL HTTPS. Biarkan kosong untuk Text Logo.</p>
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">Deskripsi Footer</label>
-                        <textarea id="siteDesc" rows="3" placeholder="Deskripsi singkat website untuk footer..." class="input-dark" maxlength="500"></textarea>
+                        <label class="text-sm text-gray-400 block mb-2">URL Logo (HTTPS)</label>
+                        <input type="url" id="siteLogo" class="input-dark" placeholder="https://...">
                     </div>
                 </div>
             </section>
-
-        </main>
+        </div>
     </div>
 
 <script>
-    // --- SECURITY: Session Management ---
-    const SESSION_KEY = 'adminSession';
-    const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+    const ADMIN_PASS = 'admin123';
+    const SESSION_KEY = 'admin_session';
     
-    function isValidSession() {
-        const session = sessionStorage.getItem(SESSION_KEY);
-        if (!session) return false;
+    function doLogin() {
+        const pwd = document.getElementById('pwd').value;
+        const msg = document.getElementById('msg');
         
-        try {
-            const { timestamp } = JSON.parse(session);
-            const now = Date.now();
-            
-            if (now - timestamp > SESSION_TIMEOUT) {
-                sessionStorage.removeItem(SESSION_KEY);
-                return false;
-            }
-            
-            // Refresh session timestamp
-            sessionStorage.setItem(SESSION_KEY, JSON.stringify({ timestamp: now }));
-            return true;
-        } catch (e) {
-            return false;
-        }
-    }
-    
-    function createSession() {
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify({ timestamp: Date.now() }));
-    }
-    
-    function clearSession() {
-        sessionStorage.removeItem(SESSION_KEY);
-    }
-    
-    // --- SECURITY: Generate CSRF Token ---
-    function getCSRFToken() {
-        let token = sessionStorage.getItem('csrfToken');
-        if (!token) {
-            token = 'csrf_' + Math.random().toString(36).substr(2, 9);
-            sessionStorage.setItem('csrfToken', token);
-        }
-        return token;
-    }
-    
-    // --- LOGIN LOGIC ---
-    async function loginAdmin() {
-        const password = document.getElementById('adminPassword').value.trim();
-        const errorEl = document.getElementById('loginError');
-        const loginBtn = document.getElementById('loginBtn');
-        
-        if (!password) {
-            errorEl.classList.remove('hidden');
-            errorEl.innerText = 'Password tidak boleh kosong!';
+        if (!pwd) {
+            msg.innerText = 'Password diperlukan';
             return;
         }
         
-        loginBtn.disabled = true;
-        loginBtn.innerText = 'Loading...';
-        
-        try {
-            const response = await fetch('/api/admin/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({ password })
-            });
-            
-            const data = await response.json();
-            
+        // Check password
+        fetch('/api/admin/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({password: pwd})
+        })
+        .then(r => r.json())
+        .then(data => {
             if (data.success) {
-                errorEl.classList.add('hidden');
-                createSession();
-                document.getElementById('loginModal').classList.add('hidden');
-                document.getElementById('mainContent').classList.remove('hidden');
-                checkAllStatus();
-                loadAdminSettings();
-                setInterval(checkAllStatus, 30000);
+                sessionStorage.setItem(SESSION_KEY, 'true');
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('dashPage').classList.remove('hidden');
+                loadSettings();
+                refreshStatus();
             } else {
-                errorEl.classList.remove('hidden');
-                errorEl.innerText = 'Password salah!';
+                msg.innerText = 'Password salah!';
             }
-        } catch (e) {
-            errorEl.classList.remove('hidden');
-            errorEl.innerText = 'Error koneksi server: ' + e.message;
-            console.error('Login error:', e);
-        } finally {
-            loginBtn.disabled = false;
-            loginBtn.innerText = 'Login';
-        }
+        })
+        .catch(e => {
+            msg.innerText = 'Error: ' + e.message;
+        });
     }
     
-    function logoutAdmin() {
-        clearSession();
-        document.getElementById('mainContent').classList.add('hidden');
-        document.getElementById('loginModal').classList.remove('hidden');
-        document.getElementById('adminPassword').value = '';
-        document.getElementById('loginError').classList.add('hidden');
+    function doLogout() {
+        sessionStorage.removeItem(SESSION_KEY);
+        document.getElementById('loginPage').classList.remove('hidden');
+        document.getElementById('dashPage').classList.add('hidden');
+        document.getElementById('pwd').value = '';
+        document.getElementById('msg').innerText = '';
     }
     
-    // --- EVENT LISTENERS ---
-    document.addEventListener('DOMContentLoaded', function() {
-        const loginBtn = document.getElementById('loginBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const passwordInput = document.getElementById('adminPassword');
-        const siteLogo = document.getElementById('siteLogo');
-        const refreshStatusBtn = document.getElementById('refreshStatusBtn');
-        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-        
-        // Login button
-        if (loginBtn) {
-            loginBtn.addEventListener('click', loginAdmin);
-        }
-        
-        // Password input - Enter key
-        if (passwordInput) {
-            passwordInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    loginAdmin();
-                }
-            });
-        }
-        
-        // Logout button
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', logoutAdmin);
-        }
-        
-        // Refresh status button
-        if (refreshStatusBtn) {
-            refreshStatusBtn.addEventListener('click', checkAllStatus);
-        }
-        
-        // Save settings button
-        if (saveSettingsBtn) {
-            saveSettingsBtn.addEventListener('click', saveSettings);
-        }
-        
-        // Logo input change
-        if (siteLogo) {
-            siteLogo.addEventListener('change', function() {
-                updateLogoPreview(this.value);
-            });
-            siteLogo.addEventListener('input', function() {
-                updateLogoPreview(this.value);
-            });
-        }
-        
-        // Check authentication on load
-        if (!isValidSession()) {
-            document.getElementById('mainContent').classList.add('hidden');
-            document.getElementById('loginModal').classList.remove('hidden');
-            document.getElementById('adminPassword').focus();
-        } else {
-            document.getElementById('loginModal').classList.add('hidden');
-            document.getElementById('mainContent').classList.remove('hidden');
-            checkAllStatus();
-            loadAdminSettings();
-            setInterval(checkAllStatus, 30000);
-        }
-    });
-    
-    // --- SECURITY: Input Validation & Sanitization ---
-    function sanitizeInput(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
+    function refreshStatus() {
+        checkAPI('netshort', '/api/netshort/foryou?page=1');
+        checkAPI('dramabox', '/api/dramabox/foryou?page=1');
     }
     
-    function isValidURL(string) {
-        if (!string) return true; // Empty is ok
-        try {
-            const url = new URL(string);
-            return url.protocol === 'https:';
-        } catch (_) {
-            return false;
-        }
-    }
-    
-    function logoError() {
-        document.getElementById('logoPreview').classList.add('hidden');
-        document.getElementById('logoPlaceholder').classList.remove('hidden');
-    }
-    
-    function updateLogoPreview(url) {
-        const img = document.getElementById('logoPreview');
-        const place = document.getElementById('logoPlaceholder');
-        
-        if (url && isValidURL(url)) {
-            img.src = url;
-            img.onerror = logoError;
-            img.classList.remove('hidden');
-            place.classList.add('hidden');
-        } else if (url && !isValidURL(url)) {
-            img.classList.add('hidden');
-            place.classList.remove('hidden');
-        } else {
-            img.classList.add('hidden');
-            place.classList.remove('hidden');
-        }
-    }
-    
-    // --- SYSTEM STATUS LOGIC ---
-    const CHECK_LIST = [
-        { id: 'netshort', url: '/api/netshort/foryou?page=1' },
-        { id: 'dramabox', url: '/api/dramabox/foryou?page=1' }
-    ];
-    
-    function countDramas(obj) {
-        if (!obj) return 0;
-        if (obj.total !== undefined) return obj.total;
-        if (obj.totalCount !== undefined) return obj.totalCount;
-        if (obj.data && obj.data.total !== undefined) return obj.data.total;
-        if (obj.data && obj.data.totalCount !== undefined) return obj.data.totalCount;
-        
-        let count = 0;
-        function r(o) {
-            if (!o) return;
-            if (Array.isArray(o)) {
-                if(o.length > 5) count += o.length;
-                o.forEach(i => r(i));
-            } else if (typeof o === 'object') {
-                Object.values(o).forEach(v => {
-                    if (typeof v === 'object') r(v);
-                });
-            }
-        }
-        r(obj);
-        return count > 0 ? count : 0;
-    }
-    
-    async function checkProvider(p) {
-        const s = document.getElementById(`status-${p.id}`);
-        const c = document.getElementById(`count-${p.id}`);
-        const pi = document.getElementById(`ping-${p.id}`);
-        
-        if (!s || !c || !pi) return;
-        
-        s.innerHTML = `<span class="status-dot bg-yellow-500 animate-pulse"></span> <span class="text-xs text-yellow-500 font-bold">PING...</span>`;
-        
-        const start = Date.now();
-        try {
-            const res = await fetch(p.url);
-            const d = Date.now() - start;
+    function checkAPI(id, url) {
+        const t = Date.now();
+        fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            const ping = Date.now() - t;
+            let count = data.total || data.data?.length || 0;
             
-            if (res.ok) {
-                const json = await res.json();
-                s.innerHTML = `<span class="status-dot dot-green"></span> <span class="text-xs text-green-400 font-bold tracking-wide">ONLINE</span>`;
-                pi.innerText = d + "ms";
-                pi.className = d < 200 ? "text-green-400 font-mono font-bold" : d < 500 ? "text-yellow-400 font-mono font-bold" : "text-red-400 font-mono font-bold";
-                c.innerText = countDramas(json);
-            } else {
-                throw new Error(res.status);
-            }
-        } catch (e) {
-            s.innerHTML = `<span class="status-dot dot-red"></span> <span class="text-xs text-red-500 font-bold tracking-wide">OFFLINE</span>`;
-            pi.innerText = "TIMEOUT";
-            pi.className = "text-red-500 font-mono font-bold";
-            c.innerText = "0";
-        }
+            document.getElementById(id + '-status').innerText = 'Online';
+            document.getElementById(id + '-status').parentElement.querySelector('.status-dot').className = 'status-dot dot-green';
+            document.getElementById(id + '-count').innerText = count;
+            document.getElementById(id + '-ping').innerText = ping + 'ms';
+        })
+        .catch(e => {
+            document.getElementById(id + '-status').innerText = 'Offline';
+            document.getElementById(id + '-status').parentElement.querySelector('.status-dot').className = 'status-dot dot-red';
+            document.getElementById(id + '-ping').innerText = 'Error';
+        });
     }
     
-    function checkAllStatus() {
-        if (!isValidSession()) {
-            logoutAdmin();
-            return;
-        }
-        CHECK_LIST.forEach(p => checkProvider(p));
-    }
-    
-    // --- SETTINGS LOGIC (Backend) ---
-    async function loadAdminSettings() {
-        try {
-            const res = await fetch('/api/admin/config');
-            const config = await res.json();
-            
-            document.getElementById('siteName').value = sanitizeInput(config.siteName || 'StreamHub123');
-            document.getElementById('siteTagline').value = sanitizeInput(config.siteDescription || '');
-            document.getElementById('siteDesc').value = sanitizeInput(config.siteDescription || '');
-            document.getElementById('siteLogo').value = config.logoUrl || '';
-            updateLogoPreview(config.logoUrl || '');
-        } catch (e) {
-            console.error('Failed to load settings:', e);
-            // Fallback ke default
+    function loadSettings() {
+        fetch('/api/admin/config')
+        .then(r => r.json())
+        .then(cfg => {
+            document.getElementById('siteName').value = cfg.siteName || 'StreamHub123';
+            document.getElementById('siteDesc').value = cfg.siteDescription || '';
+            document.getElementById('siteLogo').value = cfg.logoUrl || '';
+        })
+        .catch(() => {
             document.getElementById('siteName').value = 'StreamHub123';
-        }
+        });
     }
     
-    async function saveSettings() {
-        if (!isValidSession()) {
-            logoutAdmin();
-            return;
-        }
-        
+    function saveSettings() {
         const name = document.getElementById('siteName').value.trim();
         const desc = document.getElementById('siteDesc').value.trim();
         const logo = document.getElementById('siteLogo').value.trim();
         
-        // Validasi
         if (!name) {
-            Swal.fire({ icon: 'error', title: 'Error!', text: 'Judul website tidak boleh kosong.', background: '#1a1a1a', color: '#fff', confirmButtonColor: '#dc2626' });
+            Swal.fire({icon: 'error', title: 'Error', text: 'Judul diperlukan', background: '#1a1a1a', color: '#fff'});
             return;
         }
         
-        if (logo && !isValidURL(logo)) {
-            Swal.fire({ icon: 'error', title: 'Error!', text: 'URL logo harus HTTPS dan valid.', background: '#1a1a1a', color: '#fff', confirmButtonColor: '#dc2626' });
-            return;
-        }
-        
-        try {
-            const res = await fetch('/api/admin/update-all', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-Token': getCSRFToken()
-                },
-                body: JSON.stringify({
-                    newName: name,
-                    newDesc: desc,
-                    newLogo: logo,
-                    newApis: ['NetShort', 'DramaBox'],
-                    password: 'admin123' // Default password - user harus ubah
-                })
-            });
-            
-            if (res.ok) {
-                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Pengaturan website telah disimpan.', background: '#1a1a1a', color: '#fff', confirmButtonColor: '#dc2626' });
+        fetch('/api/admin/update-all', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                newName: name,
+                newDesc: desc,
+                newLogo: logo,
+                newApis: ['NetShort', 'DramaBox'],
+                password: ADMIN_PASS
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({icon: 'success', title: 'Berhasil', text: 'Pengaturan disimpan', background: '#1a1a1a', color: '#fff'});
             } else {
-                Swal.fire({ icon: 'error', title: 'Error!', text: 'Gagal menyimpan pengaturan.', background: '#1a1a1a', color: '#fff', confirmButtonColor: '#dc2626' });
+                Swal.fire({icon: 'error', title: 'Error', text: 'Gagal menyimpan', background: '#1a1a1a', color: '#fff'});
             }
-        } catch (e) {
-            Swal.fire({ icon: 'error', title: 'Error!', text: 'Koneksi server gagal: ' + e.message, background: '#1a1a1a', color: '#fff', confirmButtonColor: '#dc2626' });
-            console.error(e);
-        }
+        })
+        .catch(e => {
+            Swal.fire({icon: 'error', title: 'Error', text: e.message, background: '#1a1a1a', color: '#fff'});
+        });
     }
+    
+    // Check session on load
+    window.addEventListener('load', () => {
+        if (sessionStorage.getItem(SESSION_KEY)) {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('dashPage').classList.remove('hidden');
+            loadSettings();
+            refreshStatus();
+        }
+    });
+    
+    // Allow Enter key for password
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('pwd').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') doLogin();
+        });
+    });
 </script>
 </body>
 </html>
