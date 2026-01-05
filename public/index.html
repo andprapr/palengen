@@ -106,21 +106,29 @@
     </div>
 
     <script>
-        // FUNGSI LOAD HEADER DAN FOOTER
+        let headerFooterLoaded = false;
+
+        // FUNGSI LOAD HEADER DAN FOOTER (ASYNCHRONOUS)
         async function loadHeaderFooter() {
+            if (headerFooterLoaded) return; // Cegah double load
             try {
-                // Load Header
-                const headerRes = await fetch('./header.html');
-                const headerHtml = await headerRes.text();
-                document.getElementById('headerContainer').innerHTML = headerHtml;
+                // Fetch both in parallel untuk lebih cepat
+                const [headerRes, footerRes] = await Promise.all([
+                    fetch('./header.html'),
+                    fetch('./footer.html')
+                ]);
                 
-                // Load Footer
-                const footerRes = await fetch('./footer.html');
-                const footerHtml = await footerRes.text();
+                const [headerHtml, footerHtml] = await Promise.all([
+                    headerRes.text(),
+                    footerRes.text()
+                ]);
+                
+                document.getElementById('headerContainer').innerHTML = headerHtml;
                 document.getElementById('footerContainer').innerHTML = footerHtml;
                 
-                // Setelah header loaded, baru attach event listeners
+                headerFooterLoaded = true;
                 attachHeaderEventListeners();
+                applySiteConfig();
             } catch (error) {
                 console.error('Error loading header/footer:', error);
             }
@@ -157,9 +165,6 @@
                 }
             });
         }
-
-        // Panggil fungsi load header footer saat DOM loaded
-        document.addEventListener('DOMContentLoaded', loadHeaderFooter);
 
         const PROVIDERS = { 
             'netshort': { name: 'NetShort', apiBase: '/api/netshort', listPath: '/api/netshort/foryou?page=', searchPath: '/api/netshort/search?query=', color: 'bg-gradient-to-br from-red-600 to-red-800', text: 'NS', theme: { badge: 'bg-red-600/90', tabActive: 'bg-red-600 border-red-600 shadow-[0_0_10px_rgba(220,38,38,0.4)]', spinner: 'border-t-red-600', hover: 'hover:bg-red-600', text: 'text-red-500' } }, 
@@ -636,9 +641,12 @@
             }
         }
 
+        // MULAI LOADING HEADER/FOOTER DAN FETCH DATA SECARA PARALLEL
         window.addEventListener('load', () => { 
-            applySiteConfig(); 
-            // Cek jika default Dramabox, load rekomendasi & tampilkan tab VIP
+            // Load header/footer tanpa menunggu
+            loadHeaderFooter();
+            
+            // Fetch data langsung tanpa menunggu header/footer selesai
             if (activeProviderKey === 'dramabox') {
                 loadRecommendations();
                 document.getElementById('vipTabBtn').classList.remove('hidden');
