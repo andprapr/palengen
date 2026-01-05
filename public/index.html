@@ -37,47 +37,8 @@
 </head>
 <body class="bg-[#0a0a0a] text-gray-100 font-sans antialiased flex flex-col min-h-screen">
 
-    <nav class="fixed w-full z-50 bg-black/90 backdrop-blur-md border-b border-white/5 shadow-lg">
-        <div class="max-w-[1600px] mx-auto px-4">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center gap-3 shrink-0 cursor-pointer" onclick="window.location.reload()">
-                    <div id="navLogoBox" class="w-9 h-9 bg-gradient-to-br from-red-600 to-red-800 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg">S</div>
-                    <img id="navLogoImg" src="" class="w-9 h-9 rounded-lg hidden object-contain bg-white/10">
-                    <span id="navSiteName" class="font-bold text-gray-200 text-xl tracking-tight leading-none">StreamHub</span>
-                </div>
-
-                <div class="flex-1 max-w-lg mx-4 hidden md:block">
-                    <div class="relative group">
-                        <input type="text" id="searchInput" placeholder="Cari drama..." class="w-full bg-[#1a1a1a] text-gray-200 rounded-full py-2 px-5 pl-11 focus:outline-none focus:ring-2 focus:ring-red-600 focus:bg-[#202020] transition-all border border-transparent group-hover:border-white/10 placeholder-gray-500">
-                        <svg class="w-5 h-5 text-gray-400 absolute left-4 top-2.5 group-focus-within:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"></path></svg>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2 md:gap-3">
-                    <div class="relative z-50">
-                        <button onclick="toggleProviderMenu()" class="flex items-center gap-2 bg-[#1a1a1a] hover:bg-[#252525] border border-white/10 px-3 py-1.5 rounded-full transition-all group">
-                            <div id="currentProviderIcon" class="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center text-[10px] font-bold text-white overflow-hidden shrink-0">NS</div>
-                            <span id="currentProviderName" class="font-bold text-gray-200 group-hover:text-white hidden sm:block text-sm">NetShort</span>
-                            <svg class="w-4 h-4 text-gray-500 group-hover:text-white transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </button>
-                        <div id="providerDropdown" class="hidden absolute top-full right-0 mt-3 w-72 bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex-col z-[100] origin-top-right ring-1 ring-white/5">
-                            <div class="px-5 py-3 border-b border-white/5 bg-black/40"><span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ganti Server</span></div>
-                            <button onclick="switchProvider('netshort')" class="flex items-start gap-4 px-5 py-4 hover:bg-white/5 w-full text-left transition-all border-b border-white/5 group">
-                                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center shrink-0 shadow-lg group-hover:scale-110 transition-transform"><span class="font-bold text-white text-sm">NS</span></div>
-                                <div class="flex flex-col justify-center"><div class="font-bold text-base text-gray-100 group-hover:text-red-500">NetShort</div><div class="text-xs text-gray-500">Drama China & Lokal</div></div>
-                            </button>
-                            <button onclick="switchProvider('dramabox')" class="flex items-start gap-4 px-5 py-4 hover:bg-white/5 w-full text-left transition-all group">
-                                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center shrink-0 shadow-lg group-hover:scale-110 transition-transform"><span class="font-bold text-white text-sm">DB</span></div>
-                                <div class="flex flex-col justify-center"><div class="font-bold text-base text-gray-100 group-hover:text-orange-500">DramaBox</div><div class="text-xs text-gray-500">Server Baru (Stabil)</div></div>
-                            </button>
-                        </div>
-                    </div>
-                    <button onclick="toggleMobileSearch()" class="md:hidden text-gray-400 hover:text-white p-2 rounded-full transition bg-white/5 border border-white/5"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"></path></svg></button>
-                    <button onclick="clearHistory()" class="text-xs text-gray-500 hover:text-red-500 transition px-2 flex items-center gap-1" title="Hapus Riwayat"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
-                </div>
-            </div>
-        </div>
-        <div id="mobileSearchContainer" class="hidden md:hidden bg-[#151515] border-b border-white/10 px-4 py-3 absolute w-full top-16 left-0 shadow-2xl animate-fade-in"><div class="relative"><input type="text" id="mobileSearchInput" placeholder="Ketik judul drama..." class="w-full bg-[#0a0a0a] text-white rounded-lg py-2.5 px-4 pl-10 border border-white/10 focus:outline-none focus:border-red-600 transition-colors"><svg class="w-5 h-5 text-gray-500 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"></path></svg></div></div>
-    </nav>
+    <!-- HEADER -->
+    <div id="headerContainer"></div>
 
     <main class="pt-20 pb-12 px-4 max-w-[1600px] mx-auto w-full relative flex-grow" id="mainContainer">
         
@@ -104,17 +65,8 @@
         <div id="pagination" class="hidden flex justify-center items-center gap-2 mt-12 py-8 border-t border-white/5"><button onclick="changePage(currentPage - 1)" id="prevBtn" class="px-4 py-2 rounded-lg bg-[#1a1a1a] text-white hover:bg-red-600 disabled:opacity-50 transition">← Prev</button><div id="pageNumbers" class="flex gap-2"></div><button onclick="changePage(currentPage + 1)" id="nextBtn" class="px-4 py-2 rounded-lg bg-[#1a1a1a] text-white hover:bg-red-600 transition">Next →</button></div>
     </main>
 
-    <footer class="bg-black text-white py-12 border-t border-gray-800 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 flex flex-col items-center text-center">
-            <div class="flex items-center gap-3 mb-6 hover:scale-105 duration-300 transition-transform">
-                <div class="w-12 h-12 bg-gradient-to-br from-red-600 to-red-800 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg" id="footerLogoBox">SH</div>
-                <img id="footerLogoImg" src="" class="w-12 h-12 rounded-xl object-contain hidden">
-                <h3 id="footerTitle" class="text-3xl font-bold tracking-tight text-white">StreamHub</h3>
-            </div>
-            <p id="footerDesc" class="text-gray-400 max-w-2xl mb-10">Platform streaming drama pendek terlengkap.</p>
-            <p class="text-gray-500 text-sm">&copy; 2024 <span id="copyrightName">StreamHub</span>. All rights reserved.</p>
-        </div>
-    </footer>
+    <!-- FOOTER -->
+    <div id="footerContainer"></div>
 
     <div id="infoModal" class="fixed inset-0 z-[100] bg-black/95 md:bg-black/80 hidden flex items-end md:items-center justify-center backdrop-blur-sm transition-opacity duration-300 opacity-0 md:px-4">
         <div class="bg-[#151515] w-full h-full md:h-auto md:max-h-[90vh] md:max-w-4xl md:rounded-2xl overflow-hidden shadow-2xl border-t md:border border-white/10 flex flex-col md:flex-row relative">
@@ -154,6 +106,26 @@
     </div>
 
     <script>
+        // FUNGSI LOAD HEADER DAN FOOTER
+        async function loadHeaderFooter() {
+            try {
+                // Load Header
+                const headerRes = await fetch('./header.html');
+                const headerHtml = await headerRes.text();
+                document.getElementById('headerContainer').innerHTML = headerHtml;
+                
+                // Load Footer
+                const footerRes = await fetch('./footer.html');
+                const footerHtml = await footerRes.text();
+                document.getElementById('footerContainer').innerHTML = footerHtml;
+            } catch (error) {
+                console.error('Error loading header/footer:', error);
+            }
+        }
+
+        // Panggil fungsi load header footer saat DOM loaded
+        document.addEventListener('DOMContentLoaded', loadHeaderFooter);
+
         const PROVIDERS = { 
             'netshort': { name: 'NetShort', apiBase: '/api/netshort', listPath: '/api/netshort/foryou?page=', searchPath: '/api/netshort/search?query=', color: 'bg-gradient-to-br from-red-600 to-red-800', text: 'NS', theme: { badge: 'bg-red-600/90', tabActive: 'bg-red-600 border-red-600 shadow-[0_0_10px_rgba(220,38,38,0.4)]', spinner: 'border-t-red-600', hover: 'hover:bg-red-600', text: 'text-red-500' } }, 
             'dramabox': { 
@@ -170,7 +142,12 @@
 
         // UI Toggles
         function toggleMobileSearch() { const c = document.getElementById('mobileSearchContainer'); const i = document.getElementById('mobileSearchInput'); c.classList.toggle('hidden'); if(!c.classList.contains('hidden')) i.focus(); }
-        document.getElementById('mobileSearchInput').addEventListener('keypress', (e) => { if(e.key==='Enter'){ searchDrama(e.target.value); document.getElementById('mobileSearchContainer').classList.add('hidden'); }});
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileSearchInput = document.getElementById('mobileSearchInput');
+            if (mobileSearchInput) {
+                mobileSearchInput.addEventListener('keypress', (e) => { if(e.key==='Enter'){ searchDrama(e.target.value); document.getElementById('mobileSearchContainer').classList.add('hidden'); }});
+            }
+        });
         function toggleEpisodeDrawer() { const drawer = document.getElementById('episodeDrawer'); drawer.classList.toggle('drawer-closed'); drawer.classList.toggle('drawer-open'); }
         function toggleProviderMenu() { document.getElementById('providerDropdown').classList.toggle('hidden'); }
         
@@ -464,8 +441,6 @@
         // --- START PLAYER [FIX: HAPUS BLOKIR PROVIDER] ---
         function startPlayer(startIndex = 0) {
             if (!currentDramaData) return;
-            // [FIX] MENGHAPUS CHECK PROVIDER AGAR BISA CROSS-PLAY
-            // if (currentDramaData.provider && currentDramaData.provider !== activeProviderKey) return;
 
             closeInfoModal();
             const isDramabox = currentDramaData.provider === 'dramabox';
@@ -529,7 +504,7 @@
                                 if (subUrl) {
                                     try {
                                         if(subUrl.endsWith('.vtt')) { const track = document.createElement('track'); track.kind = 'captions'; track.label = 'Indonesia'; track.srclang = 'id'; track.src = subUrl; track.default = true; videoEl.appendChild(track); subStatus.innerText = "SUB: ID"; } 
-                                        else { const res = await fetch(subUrl); if(res.ok) { const srtText = await res.text(); const vttUrl = srtToVttBlob(srtText); const track = document.createElement('track'); track.kind = 'captions'; track.label = 'Indonesia'; track.srclang = 'id'; track.src = vttUrl; track.default = true; videoEl.appendChild(track); subStatus.innerText = "SUB: ID"; } }
+                                        else { const res = await fetch(subUrl); if(res.ok) { const srtText = await res.text(); const vttUrl = srtToVttBlob(srtText); const track = document.createElement('track'); track.kind = 'captions'; track.label = 'Indonesia'; track.srclang = 'id'; track.src = vttUrl; track.default = true; videoEl.appendChild(track); subStatus.innerText = "SUB: ID"; } }}
                                     } catch(e) { subStatus.innerText = "SUB: ERR"; }
                                 } else { subStatus.innerText = "NO SUB"; }
                                 videoEl.play(); 
@@ -593,7 +568,12 @@
         function changePage(page) { if (page < 1) return; currentPage = page; window.scrollTo({ top: 0, behavior: 'smooth' }); fetchDramas(page); }
         function setupIdleDetection() { const modal = document.getElementById('playerModal'), video = document.getElementById('mainVideo'), uiElements = [document.getElementById('playerTopUI'), document.getElementById('playerRightUI'), document.getElementById('playerBottomUI')]; function showUI() { uiElements.forEach(el => el.classList.remove('ui-hidden')); clearTimeout(idleTimer); if (!video.paused) idleTimer = setTimeout(() => uiElements.forEach(el => el.classList.add('ui-hidden')), 3500); } modal.onmousemove = showUI; modal.ontouchstart = (e) => { if (!e.target.closest('#episodeDrawer')) showUI(); }; modal.onclick = (e) => { if (!e.target.closest('#episodeDrawer') && !e.target.closest('button')) showUI(); }; video.onpause = () => { clearTimeout(idleTimer); uiElements.forEach(el => el.classList.remove('ui-hidden')); }; video.onplay = showUI; }
         
-        document.getElementById('searchInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') searchDrama(e.target.value); });
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchDrama(e.target.value); });
+            }
+        });
         
         function applySiteConfig() {
             const config = JSON.parse(localStorage.getItem('siteConfig')) || {
