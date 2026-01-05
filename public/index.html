@@ -105,16 +105,16 @@
         </div>
     </div>
 
-    <!-- EXTERNAL SCRIPT LOADER -->
-    <script id="core" type="module">
-        // Prevent console access
-        Object.defineProperty(window, 'console', {
-            value: {},
-            writable: false,
-            configurable: false
+    <!-- SECURITY & CORE LOGIC -->
+    <script>
+        // SECURITY PROTECTIONS
+        // 1. Disable right-click
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            return false;
         });
-        
-        // Disable Developer Tools
+
+        // 2. Disable keyboard shortcuts (F12, Ctrl+Shift+I, etc)
         document.addEventListener('keydown', (e) => {
             if (
                 (e.ctrlKey && e.shiftKey && e.keyCode === 73) ||  // Ctrl+Shift+I
@@ -127,21 +127,18 @@
                 return false;
             }
         });
-        
-        // Prevent right-click
-        document.addEventListener('contextmenu', (e) => e.preventDefault());
-        
-        // Prevent developer tools detection
-        setInterval(() => {
-            const check = new Date();
-            debugger;
-            if (new Date() - check > 100) {
-                window.location.href = 'about:blank';
-            }
-        }, 5000);
+
+        // 3. Disable console
+        Object.defineProperty(window, 'console', {
+            value: new Proxy(new console.constructor(), {
+                get: () => undefined,
+            }),
+            writable: false,
+            configurable: false
+        });
     </script>
 
-    <!-- EXTERNAL LOGIC (MINIFIED) -->
-    <script id="app" type="module" src="./app.min.js"></script>
+    <!-- LOAD EXTERNAL APP LOGIC -->
+    <script src="./app.min.js"></script>
 </body>
 </html>
