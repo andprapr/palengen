@@ -118,9 +118,44 @@
                 const footerRes = await fetch('./footer.html');
                 const footerHtml = await footerRes.text();
                 document.getElementById('footerContainer').innerHTML = footerHtml;
+                
+                // Setelah header loaded, baru attach event listeners
+                attachHeaderEventListeners();
             } catch (error) {
                 console.error('Error loading header/footer:', error);
             }
+        }
+
+        // FUNGSI ATTACH EVENT LISTENERS KE HEADER
+        function attachHeaderEventListeners() {
+            const searchInput = document.getElementById('searchInput');
+            const mobileSearchInput = document.getElementById('mobileSearchInput');
+            
+            if (searchInput) {
+                searchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        searchDrama(e.target.value);
+                    }
+                });
+            }
+            
+            if (mobileSearchInput) {
+                mobileSearchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        searchDrama(e.target.value);
+                        document.getElementById('mobileSearchContainer').classList.add('hidden');
+                    }
+                });
+            }
+            
+            // Close provider dropdown ketika klik di luar
+            window.addEventListener('click', function(e) {
+                const btn = document.querySelector('button[onclick="toggleProviderMenu()"]');
+                const menu = document.getElementById('providerDropdown');
+                if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
+                    menu.classList.add('hidden');
+                }
+            });
         }
 
         // Panggil fungsi load header footer saat DOM loaded
@@ -142,12 +177,6 @@
 
         // UI Toggles
         function toggleMobileSearch() { const c = document.getElementById('mobileSearchContainer'); const i = document.getElementById('mobileSearchInput'); c.classList.toggle('hidden'); if(!c.classList.contains('hidden')) i.focus(); }
-        document.addEventListener('DOMContentLoaded', () => {
-            const mobileSearchInput = document.getElementById('mobileSearchInput');
-            if (mobileSearchInput) {
-                mobileSearchInput.addEventListener('keypress', (e) => { if(e.key==='Enter'){ searchDrama(e.target.value); document.getElementById('mobileSearchContainer').classList.add('hidden'); }});
-            }
-        });
         function toggleEpisodeDrawer() { const drawer = document.getElementById('episodeDrawer'); drawer.classList.toggle('drawer-closed'); drawer.classList.toggle('drawer-open'); }
         function toggleProviderMenu() { document.getElementById('providerDropdown').classList.toggle('hidden'); }
         
@@ -176,8 +205,6 @@
             }
             changeTab('all'); 
         }
-
-        window.addEventListener('click', function(e) { const btn = document.querySelector('button[onclick="toggleProviderMenu()"]'); const menu = document.getElementById('providerDropdown'); if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) menu.classList.add('hidden'); });
         
         function changeTab(tabName) { 
             currentTab = tabName; 
@@ -504,7 +531,7 @@
                                 if (subUrl) {
                                     try {
                                         if(subUrl.endsWith('.vtt')) { const track = document.createElement('track'); track.kind = 'captions'; track.label = 'Indonesia'; track.srclang = 'id'; track.src = subUrl; track.default = true; videoEl.appendChild(track); subStatus.innerText = "SUB: ID"; } 
-                                        else { const res = await fetch(subUrl); if(res.ok) { const srtText = await res.text(); const vttUrl = srtToVttBlob(srtText); const track = document.createElement('track'); track.kind = 'captions'; track.label = 'Indonesia'; track.srclang = 'id'; track.src = vttUrl; track.default = true; videoEl.appendChild(track); subStatus.innerText = "SUB: ID"; } }}
+                                        else { const res = await fetch(subUrl); if(res.ok) { const srtText = await res.text(); const vttUrl = srtToVttBlob(srtText); const track = document.createElement('track'); track.kind = 'captions'; track.label = 'Indonesia'; track.srclang = 'id'; track.src = vttUrl; track.default = true; videoEl.appendChild(track); subStatus.innerText = "SUB: ID"; } }
                                     } catch(e) { subStatus.innerText = "SUB: ERR"; }
                                 } else { subStatus.innerText = "NO SUB"; }
                                 videoEl.play(); 
@@ -568,13 +595,6 @@
         function changePage(page) { if (page < 1) return; currentPage = page; window.scrollTo({ top: 0, behavior: 'smooth' }); fetchDramas(page); }
         function setupIdleDetection() { const modal = document.getElementById('playerModal'), video = document.getElementById('mainVideo'), uiElements = [document.getElementById('playerTopUI'), document.getElementById('playerRightUI'), document.getElementById('playerBottomUI')]; function showUI() { uiElements.forEach(el => el.classList.remove('ui-hidden')); clearTimeout(idleTimer); if (!video.paused) idleTimer = setTimeout(() => uiElements.forEach(el => el.classList.add('ui-hidden')), 3500); } modal.onmousemove = showUI; modal.ontouchstart = (e) => { if (!e.target.closest('#episodeDrawer')) showUI(); }; modal.onclick = (e) => { if (!e.target.closest('#episodeDrawer') && !e.target.closest('button')) showUI(); }; video.onpause = () => { clearTimeout(idleTimer); uiElements.forEach(el => el.classList.remove('ui-hidden')); }; video.onplay = showUI; }
         
-        document.addEventListener('DOMContentLoaded', () => {
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchDrama(e.target.value); });
-            }
-        });
-        
         function applySiteConfig() {
             const config = JSON.parse(localStorage.getItem('siteConfig')) || {
                 name: 'StreamHub123', tagline: 'Nonton Drama China', desc: 'Platform streaming drama pendek terlengkap.', logo: ''
@@ -584,17 +604,17 @@
             const navImg = document.getElementById('navLogoImg');
             const navBox = document.getElementById('navLogoBox');
 
-            navName.innerText = config.name;
+            if (navName) navName.innerText = config.name;
 
             // Logic Fallback Logo (Sesuai Permintaan)
             if(config.logo) { 
-                navImg.src = config.logo; 
-                navImg.classList.remove('hidden'); 
-                navBox.classList.add('hidden');
+                if (navImg) navImg.src = config.logo;
+                if (navImg) navImg.classList.remove('hidden');
+                if (navBox) navBox.classList.add('hidden');
             } else { 
-                navImg.classList.add('hidden'); 
-                navBox.classList.remove('hidden');
-                navBox.innerText = config.name.charAt(0).toUpperCase();
+                if (navImg) navImg.classList.add('hidden');
+                if (navBox) navBox.classList.remove('hidden');
+                if (navBox) navBox.innerText = config.name.charAt(0).toUpperCase();
             }
 
             document.getElementById('footerTitle').innerText = config.name;
@@ -602,8 +622,18 @@
             document.getElementById('copyrightName').innerText = config.name;
             const footBox = document.getElementById('footerLogoBox');
             const footImg = document.getElementById('footerLogoImg');
-            if(config.logo) { footImg.src = config.logo; footImg.classList.remove('hidden'); footBox.classList.add('hidden'); } 
-            else { footImg.classList.add('hidden'); footBox.classList.remove('hidden'); const initials = config.name.substring(0, 2).toUpperCase(); footBox.innerText = initials; }
+            if(config.logo) { 
+                if (footImg) footImg.src = config.logo;
+                if (footImg) footImg.classList.remove('hidden');
+                if (footBox) footBox.classList.add('hidden');
+            } else { 
+                if (footImg) footImg.classList.add('hidden');
+                if (footBox) footBox.classList.remove('hidden');
+                if (footBox) {
+                    const initials = config.name.substring(0, 2).toUpperCase();
+                    footBox.innerText = initials;
+                }
+            }
         }
 
         window.addEventListener('load', () => { 
