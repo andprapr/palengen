@@ -30,7 +30,9 @@ router.get('/melolo/latest', async (req, res) => {
     try {
         res.set('Cache-Control', 'public, max-age=600');
         const result = await meloloLatest();
-        res.json({ status: true, success: true, data: result });
+        // meloloLatest sudah return { status: true, data: { books: [] } }
+        // Jadi langsung return saja, jangan wrap lagi
+        res.json(result);
     } catch (error) {
         console.error("Melolo Latest Error:", error.message);
         res.status(500).json({ status: false, error: 'Terjadi kesalahan pada server', message: error.message });
@@ -42,7 +44,7 @@ router.get('/melolo/trending', async (req, res) => {
     try {
         res.set('Cache-Control', 'public, max-age=600');
         const result = await meloloTrending();
-        res.json({ status: true, success: true, data: result });
+        res.json(result);
     } catch (error) {
         console.error("Melolo Trending Error:", error.message);
         res.status(500).json({ status: false, error: 'Terjadi kesalahan pada server', message: error.message });
@@ -56,7 +58,7 @@ router.get('/melolo/search', async (req, res) => {
         if (!query) return res.status(400).json({ status: false, error: 'Parameter "query" dibutuhkan' });
         
         const result = await meloloSearch(query, parseInt(limit), parseInt(offset));
-        res.json({ status: true, success: true, data: result });
+        res.json(result);
     } catch (error) {
         console.error("Melolo Search Error:", error.message);
         res.status(500).json({ status: false, error: 'Terjadi kesalahan pada server', message: error.message });
@@ -69,7 +71,8 @@ router.get('/melolo/detail/:seriesId', async (req, res) => {
         res.set('Cache-Control', 'public, max-age=3600');
         const { seriesId } = req.params;
         const result = await meloloDetail(seriesId);
-        res.json({ status: true, success: true, data: result });
+        // meloloDetail return raw response dari API, sudah benar
+        res.json(result);
     } catch (error) {
         console.error("Melolo Detail Error:", error.message);
         res.status(500).json({ status: false, error: 'Terjadi kesalahan pada server', message: error.message });
@@ -82,10 +85,23 @@ router.get('/melolo/stream/:videoId', async (req, res) => {
         res.set('Cache-Control', 'no-cache');
         const { videoId } = req.params;
         const result = await meloloLinkStream(videoId);
-        res.json({ status: true, success: true, data: result });
+        res.json(result);
     } catch (error) {
         console.error("Melolo Stream Error:", error.message);
         res.status(500).json({ status: false, error: 'Terjadi kesalahan pada server', message: error.message });
+    }
+});
+
+// ============================================
+// DEBUG ENDPOINT - MELOLO RAW DATA
+// ============================================
+router.get('/debug/melolo/raw', async (req, res) => {
+    try {
+        const result = await meloloLatest();
+        res.set('Content-Type', 'application/json');
+        res.send(JSON.stringify(result, null, 2));
+    } catch (error) {
+        res.status(500).send(JSON.stringify({ error: error.message }, null, 2));
     }
 });
 
