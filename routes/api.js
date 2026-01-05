@@ -22,6 +22,73 @@ const formatNetshortItem = (item) => ({
 });
 
 // ============================================
+// NORMALISASI DATA DARI SEMUA PROVIDER
+// ============================================
+const normalizeDramaItem = (item, source) => {
+    switch(source) {
+        case 'melolo':
+            return {
+                shortPlayId: item.book_id,
+                id: item.book_id,
+                bookId: item.book_id,
+                shortPlayName: item.book_name,
+                name: item.book_name,
+                title: item.book_name,
+                shortPlayCover: item.thumb_url || item.cover_url,
+                cover: item.thumb_url || item.cover_url,
+                coverUrl: item.thumb_url || item.cover_url,
+                heatScoreShow: item.play_count || "HOT",
+                playCount: item.play_count,
+                chapterCount: item.episode_count || 0,
+                labelArray: item.tags || [],
+                tags: item.tags || [],
+                introduction: item.abstract || "",
+                source: 'melolo'
+            };
+        case 'netshort':
+            return {
+                shortPlayId: item.shortPlayId,
+                id: item.shortPlayId,
+                bookId: item.shortPlayId,
+                shortPlayName: item.shortPlayName,
+                name: item.shortPlayName,
+                title: item.shortPlayName,
+                shortPlayCover: item.shortPlayCover,
+                cover: item.shortPlayCover,
+                coverUrl: item.shortPlayCover,
+                heatScoreShow: item.heatScoreShow || "HOT",
+                playCount: item.heatScoreShow,
+                chapterCount: item.chapterCount || 0,
+                labelArray: item.labelArray || [],
+                tags: item.labelArray || [],
+                introduction: item.introduction || "",
+                source: 'netshort'
+            };
+        case 'dramabox':
+            return {
+                shortPlayId: item.bookId || item.id,
+                id: item.bookId || item.id,
+                bookId: item.bookId || item.id,
+                shortPlayName: item.bookName || item.name,
+                name: item.bookName || item.name,
+                title: item.bookName || item.name,
+                shortPlayCover: item.cover || item.coverWap,
+                cover: item.cover || item.coverWap,
+                coverUrl: item.cover || item.coverWap,
+                heatScoreShow: item.playCount || "HOT",
+                playCount: item.playCount,
+                chapterCount: item.chapterCount || 0,
+                labelArray: item.tags || [],
+                tags: item.tags || [],
+                introduction: item.introduction || item.briefIntroduction || "",
+                source: 'dramabox'
+            };
+        default:
+            return item;
+    }
+};
+
+// ============================================
 // MELOLO ROUTES
 // ============================================
 
@@ -30,6 +97,18 @@ router.get('/melolo/latest', async (req, res) => {
     try {
         res.set('Cache-Control', 'public, max-age=600');
         const result = await meloloLatest();
+        
+        // Normalisasi data Melolo
+        if (result && result.data && result.data.books) {
+            const normalizedBooks = result.data.books.map(item => normalizeDramaItem(item, 'melolo'));
+            return res.json({
+                status: true,
+                success: true,
+                data: normalizedBooks,
+                isMore: true
+            });
+        }
+        
         res.json(result);
     } catch (error) {
         console.error("[API] Melolo Latest Error:", error.message);
@@ -42,6 +121,18 @@ router.get('/melolo/trending', async (req, res) => {
     try {
         res.set('Cache-Control', 'public, max-age=600');
         const result = await meloloTrending();
+        
+        // Normalisasi data Melolo
+        if (result && result.data && result.data.books) {
+            const normalizedBooks = result.data.books.map(item => normalizeDramaItem(item, 'melolo'));
+            return res.json({
+                status: true,
+                success: true,
+                data: normalizedBooks,
+                isMore: true
+            });
+        }
+        
         res.json(result);
     } catch (error) {
         console.error("[API] Melolo Trending Error:", error.message);
@@ -56,6 +147,17 @@ router.get('/melolo/search', async (req, res) => {
         if (!q) return res.status(400).json({ status: false, error: 'Parameter "q" required' });
         
         const result = await meloloSearch(q, parseInt(limit), parseInt(offset));
+        
+        // Normalisasi data Melolo
+        if (result && result.data && result.data.books) {
+            const normalizedBooks = result.data.books.map(item => normalizeDramaItem(item, 'melolo'));
+            return res.json({
+                status: true,
+                success: true,
+                data: normalizedBooks
+            });
+        }
+        
         res.json(result);
     } catch (error) {
         console.error("[API] Melolo Search Error:", error.message);
@@ -146,15 +248,30 @@ router.get('/home', async (req, res) => {
     try {
         res.set('Cache-Control', 'public, max-age=300'); 
         const source = req.query.source || req.query.server || 'dramabox';
+        
         if (source === 'netshort') {
             const rawData = await nsHome(parseInt(req.query.page) || 1);
             const list = rawData.contentInfos || [];
             return res.json({ status: true, success: true, data: list.map(formatNetshortItem), isMore: list.length > 0 });
         }
+        
         if (source === 'melolo') {
             const result = await meloloLatest();
+            
+            // Normalisasi data Melolo
+            if (result && result.data && result.data.books) {
+                const normalizedBooks = result.data.books.map(item => normalizeDramaItem(item, 'melolo'));
+                return res.json({
+                    status: true,
+                    success: true,
+                    data: normalizedBooks,
+                    isMore: true
+                });
+            }
+            
             return res.json(result);
         }
+        
         const dramabox = new Dramabox('in');
         const result = await dramabox.getRecommendedBooks(req.query.page || 1);
         const labeledData = result.map(item => ({ ...item, source: 'dramabox' }));
@@ -166,15 +283,29 @@ router.get('/search', async (req, res) => {
     try {
         const source = req.query.source || req.query.server || 'dramabox';
         const query = req.query.q || req.query.query || "";
+        
         if (source === 'netshort') {
             const rawData = await nsSearch(query);
             const list = Array.isArray(rawData) ? rawData : (rawData.contentInfos || []);
             return res.json({ status: true, success: true, data: list.map(formatNetshortItem) });
         }
+        
         if (source === 'melolo') {
             const result = await meloloSearch(query);
+            
+            // Normalisasi data Melolo
+            if (result && result.data && result.data.books) {
+                const normalizedBooks = result.data.books.map(item => normalizeDramaItem(item, 'melolo'));
+                return res.json({
+                    status: true,
+                    success: true,
+                    data: normalizedBooks
+                });
+            }
+            
             return res.json(result);
         }
+        
         const dramabox = new Dramabox('in');
         const result = await dramabox.searchDrama(query);
         const labeledData = result.map(item => ({ ...item, source: 'dramabox' }));
