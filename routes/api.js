@@ -32,8 +32,8 @@ router.get('/melolo/latest', async (req, res) => {
         const result = await meloloLatest();
         res.json(result);
     } catch (error) {
-        console.error("Melolo Latest Error:", error.message);
-        res.status(500).json({ status: false, error: 'Terjadi kesalahan pada server', message: error.message });
+        console.error("[API] Melolo Latest Error:", error.message);
+        res.status(500).json({ status: false, error: 'Server error', message: error.message });
     }
 });
 
@@ -44,36 +44,41 @@ router.get('/melolo/trending', async (req, res) => {
         const result = await meloloTrending();
         res.json(result);
     } catch (error) {
-        console.error("Melolo Trending Error:", error.message);
-        res.status(500).json({ status: false, error: 'Terjadi kesalahan pada server', message: error.message });
+        console.error("[API] Melolo Trending Error:", error.message);
+        res.status(500).json({ status: false, error: 'Server error', message: error.message });
     }
 });
 
-// GET /api/melolo/search?query=namafilm&limit=10&offset=0 - Cari Drama
+// GET /api/melolo/search?q=query - Cari Drama
 router.get('/melolo/search', async (req, res) => {
     try {
-        const { query, limit = 10, offset = 0 } = req.query;
-        if (!query) return res.status(400).json({ status: false, error: 'Parameter "query" dibutuhkan' });
+        const { q, limit = 10, offset = 0 } = req.query;
+        if (!q) return res.status(400).json({ status: false, error: 'Parameter "q" required' });
         
-        const result = await meloloSearch(query, parseInt(limit), parseInt(offset));
+        const result = await meloloSearch(q, parseInt(limit), parseInt(offset));
         res.json(result);
     } catch (error) {
-        console.error("Melolo Search Error:", error.message);
-        res.status(500).json({ status: false, error: 'Terjadi kesalahan pada server', message: error.message });
+        console.error("[API] Melolo Search Error:", error.message);
+        res.status(500).json({ status: false, error: 'Server error', message: error.message });
     }
 });
 
-// GET /api/melolo/detail/:seriesId - Detail Drama
-router.get('/melolo/detail/:seriesId', async (req, res) => {
+// GET /api/melolo/detail/:seriesId OR /api/melolo/detail?bookId=XXX
+router.get(['/melolo/detail/:seriesId', '/melolo/detail'], async (req, res) => {
     try {
         res.set('Cache-Control', 'public, max-age=3600');
-        const { seriesId } = req.params;
-        console.log(`[Melolo Detail] Fetching seriesId: ${seriesId}`);
+        const seriesId = req.params.seriesId || req.query.bookId;
+        
+        if (!seriesId) {
+            return res.status(400).json({ status: false, error: 'bookId parameter required' });
+        }
+        
+        console.log(`[API] Melolo Detail request for: ${seriesId}`);
         const result = await meloloDetail(seriesId);
         res.json(result);
     } catch (error) {
-        console.error("Melolo Detail Error:", error.message);
-        res.status(500).json({ status: false, error: 'Terjadi kesalahan pada server', message: error.message });
+        console.error("[API] Melolo Detail Error:", error.message);
+        res.status(500).json({ status: false, error: 'Server error', message: error.message });
     }
 });
 
@@ -82,25 +87,11 @@ router.get('/melolo/stream/:videoId', async (req, res) => {
     try {
         res.set('Cache-Control', 'no-cache');
         const { videoId } = req.params;
-        console.log(`[Melolo Stream] Fetching videoId: ${videoId}`);
         const result = await meloloLinkStream(videoId);
         res.json(result);
     } catch (error) {
-        console.error("Melolo Stream Error:", error.message);
-        res.status(500).json({ status: false, error: 'Terjadi kesalahan pada server', message: error.message });
-    }
-});
-
-// ============================================
-// DEBUG ENDPOINT - MELOLO RAW DATA
-// ============================================
-router.get('/debug/melolo/raw', async (req, res) => {
-    try {
-        const result = await meloloLatest();
-        res.set('Content-Type', 'application/json');
-        res.send(JSON.stringify(result, null, 2));
-    } catch (error) {
-        res.status(500).send(JSON.stringify({ error: error.message }, null, 2));
+        console.error("[API] Melolo Stream Error:", error.message);
+        res.status(500).json({ status: false, error: 'Server error', message: error.message });
     }
 });
 
@@ -160,6 +151,10 @@ router.get('/home', async (req, res) => {
             const list = rawData.contentInfos || [];
             return res.json({ status: true, success: true, data: list.map(formatNetshortItem), isMore: list.length > 0 });
         }
+        if (source === 'melolo') {
+            const result = await meloloLatest();
+            return res.json(result);
+        }
         const dramabox = new Dramabox('in');
         const result = await dramabox.getRecommendedBooks(req.query.page || 1);
         const labeledData = result.map(item => ({ ...item, source: 'dramabox' }));
@@ -176,6 +171,10 @@ router.get('/search', async (req, res) => {
             const list = Array.isArray(rawData) ? rawData : (rawData.contentInfos || []);
             return res.json({ status: true, success: true, data: list.map(formatNetshortItem) });
         }
+        if (source === 'melolo') {
+            const result = await meloloSearch(query);
+            return res.json(result);
+        }
         const dramabox = new Dramabox('in');
         const result = await dramabox.searchDrama(query);
         const labeledData = result.map(item => ({ ...item, source: 'dramabox' }));
@@ -190,9 +189,9 @@ router.get(['/detail/:bookId', '/detail/:bookId/v2'], async (req, res) => {
         const source = req.query.source || req.query.server || 'dramabox';
         const bookId = req.params.bookId;
         
-        // ✅ Handle Melolo Provider
+        // Handle Melolo Provider
         if (source === 'melolo') {
-            console.log(`[Detail Fallback] Routing melolo provider to /api/melolo/detail/${bookId}`);
+            console.log(`[API] Routing melolo to detail handler for: ${bookId}`);
             const result = await meloloDetail(bookId);
             return res.json(result);
         }
