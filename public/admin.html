@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StreamHub Admin Dashboard</title>
+    <!-- Content Security Policy untuk prevent XSS -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; img-src 'self' https: data:; font-src 'self' https:;">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
+    <style>
         .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); }
         .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
         .dot-green { background-color: #22c55e; box-shadow: 0 0 8px #22c55e; }
@@ -20,199 +23,393 @@
 </head>
 <body class="bg-[#050505] text-gray-200 font-sans antialiased min-h-screen p-6 md:p-12">
 
-    <header class="flex justify-between items-center mb-12 max-w-6xl mx-auto">
-        <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-gradient-to-br from-red-700 to-red-900 rounded-xl flex items-center justify-center font-bold text-white text-xl shadow-lg shadow-red-900/40">SH</div>
-            <div><h1 class="text-2xl font-bold tracking-tight text-white">StreamHub <span class="text-gray-600 font-normal">Admin</span></h1></div>
+    <!-- LOGIN MODAL (Muncul jika belum login) -->
+    <div id="loginModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-[#1a1a1a] border border-white/10 rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <div class="flex items-center justify-center mb-6">
+                <div class="w-12 h-12 bg-gradient-to-br from-red-700 to-red-900 rounded-xl flex items-center justify-center font-bold text-white text-xl shadow-lg shadow-red-900/40">SH</div>
+            </div>
+            <h2 class="text-2xl font-bold text-white text-center mb-2">StreamHub Admin</h2>
+            <p class="text-gray-500 text-center text-sm mb-6">Masukkan password untuk melanjutkan</p>
+            
+            <div class="mb-6">
+                <label class="block text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">Password Admin</label>
+                <input type="password" id="adminPassword" placeholder="Masukkan password" class="input-dark" onkeypress="if(event.key==='Enter') loginAdmin()">
+                <p id="loginError" class="text-xs text-red-500 mt-2 hidden">Password salah!</p>
+            </div>
+            
+            <button onclick="loginAdmin()" class="w-full bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-lg shadow-red-900/20">Login</button>
         </div>
-        <a href="index.html" target="_blank" class="text-sm text-gray-500 hover:text-white transition flex items-center gap-2 border border-white/10 px-4 py-2 rounded-lg hover:bg-white/5">
-            Lihat Website <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-        </a>
-    </header>
+    </div>
 
-    <main class="max-w-6xl mx-auto space-y-10">
-        <section>
-            <div class="flex justify-between items-end mb-6">
-                <div><h2 class="text-xl font-bold text-white">Status Server API</h2><p class="text-gray-500 text-sm mt-1">Monitor kesehatan koneksi provider drama real-time.</p></div>
-                <button onclick="checkAllStatus()" class="bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-2 border border-white/10 hover:border-white/30"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>Refresh Status</button>
+    <!-- MAIN CONTENT (Tersembunyi sebelum login) -->
+    <div id="mainContent" class="hidden">
+        <header class="flex justify-between items-center mb-12 max-w-6xl mx-auto">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-red-700 to-red-900 rounded-xl flex items-center justify-center font-bold text-white text-xl shadow-lg shadow-red-900/40">SH</div>
+                <div><h1 class="text-2xl font-bold tracking-tight text-white">StreamHub <span class="text-gray-600 font-normal">Admin</span></h1></div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="glass-panel rounded-2xl p-8 relative overflow-hidden group hover:bg-white/[0.02] transition duration-500">
-                    <div class="flex items-start justify-between mb-8 relative z-10">
-                        <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-red-900/40">NS</div>
-                            <div><h3 class="font-bold text-xl text-white">NetShort</h3><div class="flex items-center gap-2 mt-1" id="status-netshort"><span class="status-dot bg-gray-600"></span> <span class="text-xs text-gray-500 font-mono tracking-wide">WAITING...</span></div></div>
-                        </div>
-                        <div class="text-right"><div class="text-4xl font-bold text-white tracking-tight" id="count-netshort">-</div><div class="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-1">Total Film (Est)</div></div>
-                    </div>
-                    <div class="bg-black/40 rounded-xl p-4 flex justify-between items-center text-xs text-gray-400 border border-white/5 relative z-10 backdrop-blur-md">
-                        <div class="flex items-center gap-2"><span>Latency:</span><span id="ping-netshort" class="text-white font-mono font-bold">-</span></div>
-                        <div class="flex items-center gap-2"><span class="opacity-50">Endpoint:</span><span class="text-gray-500 font-mono">/api/netshort</span></div>
-                    </div>
-                </div>
-                <div class="glass-panel rounded-2xl p-8 relative overflow-hidden group hover:bg-white/[0.02] transition duration-500">
-                    <div class="flex items-start justify-between mb-8 relative z-10">
-                        <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-orange-900/40">DB</div>
-                            <div><h3 class="font-bold text-xl text-white">DramaBox</h3><div class="flex items-center gap-2 mt-1" id="status-dramabox"><span class="status-dot bg-gray-600"></span> <span class="text-xs text-gray-500 font-mono tracking-wide">WAITING...</span></div></div>
-                        </div>
-                        <div class="text-right"><div class="text-4xl font-bold text-white tracking-tight" id="count-dramabox">-</div><div class="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-1">Total Film (Est)</div></div>
-                    </div>
-                    <div class="bg-black/40 rounded-xl p-4 flex justify-between items-center text-xs text-gray-400 border border-white/5 relative z-10 backdrop-blur-md">
-                        <div class="flex items-center gap-2"><span>Latency:</span><span id="ping-dramabox" class="text-white font-mono font-bold">-</span></div>
-                        <div class="flex items-center gap-2"><span class="opacity-50">Endpoint:</span><span class="text-gray-500 font-mono">/api/dramabox</span></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="glass-panel rounded-2xl p-8 border border-white/10 mt-8 relative">
-            <div class="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
-                <div>
-                    <h3 class="font-bold text-xl text-white">Pengaturan Website</h3>
-                    <p class="text-xs text-gray-500 mt-1">Sesuaikan tampilan depan website Anda.</p>
-                </div>
-                <button onclick="saveSettings()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-lg shadow-red-900/20 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                    Simpan Perubahan
+            <div class="flex items-center gap-4">
+                <a href="index.html" target="_blank" class="text-sm text-gray-500 hover:text-white transition flex items-center gap-2 border border-white/10 px-4 py-2 rounded-lg hover:bg-white/5">
+                    Lihat Website <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </a>
+                <button onclick="logoutAdmin()" class="text-sm text-gray-500 hover:text-red-400 transition flex items-center gap-2 border border-white/10 px-4 py-2 rounded-lg hover:bg-red-900/10">
+                    Logout <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                 </button>
             </div>
-            
-            <div class="grid gap-6 md:grid-cols-2">
-                <div>
-                    <label class="block text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">Judul Website</label>
-                    <input type="text" id="siteName" placeholder="Contoh: StreamHub123" class="input-dark">
-                </div>
-                
-                <div>
-                    <label class="block text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">Tagline (Slogan)</label>
-                    <input type="text" id="siteTagline" placeholder="Contoh: Nonton Drama China Terlengkap" class="input-dark">
-                </div>
+        </header>
 
-                <div class="md:col-span-2">
-                    <label class="block text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">URL Logo (Opsional)</label>
-                    <div class="flex gap-2">
-                        <input type="text" id="siteLogo" placeholder="https://..." class="input-dark flex-1">
-                        <div class="w-10 h-10 bg-white/5 rounded border border-white/10 flex items-center justify-center shrink-0">
-                            <img id="logoPreview" src="" class="w-8 h-8 object-contain hidden">
-                            <span id="logoPlaceholder" class="text-xs text-gray-600">Img</span>
+        <main class="max-w-6xl mx-auto space-y-10">
+            <section>
+                <div class="flex justify-between items-end mb-6">
+                    <div><h2 class="text-xl font-bold text-white">Status Server API</h2><p class="text-gray-500 text-sm mt-1">Monitor kesehatan koneksi provider drama real-time.</p></div>
+                    <button onclick="checkAllStatus()" class="bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-2 border border-white/10 hover:border-white/30"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>Refresh Status</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass-panel rounded-2xl p-8 relative overflow-hidden group hover:bg-white/[0.02] transition duration-500">
+                        <div class="flex items-start justify-between mb-8 relative z-10">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-red-900/40">NS</div>
+                                <div><h3 class="font-bold text-xl text-white">NetShort</h3><div class="flex items-center gap-2 mt-1" id="status-netshort"><span class="status-dot bg-gray-600"></span> <span class="text-xs text-gray-500 font-mono tracking-wide">WAITING...</span></div></div>
+                            </div>
+                            <div class="text-right"><div class="text-4xl font-bold text-white tracking-tight" id="count-netshort">-</div><div class="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-1">Total Film (Est)</div></div>
+                        </div>
+                        <div class="bg-black/40 rounded-xl p-4 flex justify-between items-center text-xs text-gray-400 border border-white/5 relative z-10 backdrop-blur-md">
+                            <div class="flex items-center gap-2"><span>Latency:</span><span id="ping-netshort" class="text-white font-mono font-bold">-</span></div>
+                            <div class="flex items-center gap-2"><span class="opacity-50">Endpoint:</span><span class="text-gray-500 font-mono">/api/netshort</span></div>
                         </div>
                     </div>
-                    <p class="text-[10px] text-gray-600 mt-1">*Biarkan kosong jika ingin menggunakan Text Logo.</p>
+                    <div class="glass-panel rounded-2xl p-8 relative overflow-hidden group hover:bg-white/[0.02] transition duration-500">
+                        <div class="flex items-start justify-between mb-8 relative z-10">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-orange-900/40">DB</div>
+                                <div><h3 class="font-bold text-xl text-white">DramaBox</h3><div class="flex items-center gap-2 mt-1" id="status-dramabox"><span class="status-dot bg-gray-600"></span> <span class="text-xs text-gray-500 font-mono tracking-wide">WAITING...</span></div></div>
+                            </div>
+                            <div class="text-right"><div class="text-4xl font-bold text-white tracking-tight" id="count-dramabox">-</div><div class="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-1">Total Film (Est)</div></div>
+                        </div>
+                        <div class="bg-black/40 rounded-xl p-4 flex justify-between items-center text-xs text-gray-400 border border-white/5 relative z-10 backdrop-blur-md">
+                            <div class="flex items-center gap-2"><span>Latency:</span><span id="ping-dramabox" class="text-white font-mono font-bold">-</span></div>
+                            <div class="flex items-center gap-2"><span class="opacity-50">Endpoint:</span><span class="text-gray-500 font-mono">/api/dramabox</span></div>
+                        </div>
+                    </div>
                 </div>
+            </section>
 
-                <div class="md:col-span-2">
-                    <label class="block text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">Deskripsi Footer</label>
-                    <textarea id="siteDesc" rows="3" placeholder="Deskripsi singkat website untuk footer..." class="input-dark"></textarea>
+            <section class="glass-panel rounded-2xl p-8 border border-white/10 mt-8 relative">
+                <div class="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
+                    <div>
+                        <h3 class="font-bold text-xl text-white">Pengaturan Website</h3>
+                        <p class="text-xs text-gray-500 mt-1">Sesuaikan tampilan depan website Anda.</p>
+                    </div>
+                    <button onclick="saveSettings()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-lg shadow-red-900/20 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                        Simpan Perubahan
+                    </button>
                 </div>
-            </div>
-        </section>
+                
+                <div class="grid gap-6 md:grid-cols-2">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">Judul Website</label>
+                        <input type="text" id="siteName" placeholder="Contoh: StreamHub123" class="input-dark" maxlength="100">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">Tagline (Slogan)</label>
+                        <input type="text" id="siteTagline" placeholder="Contoh: Nonton Drama China Terlengkap" class="input-dark" maxlength="150">
+                    </div>
 
-    </main>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">URL Logo (Opsional)</label>
+                        <div class="flex gap-2">
+                            <input type="url" id="siteLogo" placeholder="https://..." class="input-dark flex-1" oninput="updateLogoPreview(this.value)">
+                            <div class="w-10 h-10 bg-white/5 rounded border border-white/10 flex items-center justify-center shrink-0">
+                                <img id="logoPreview" class="w-8 h-8 object-contain hidden" onerror="logoError()">
+                                <span id="logoPlaceholder" class="text-xs text-gray-600">Img</span>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-gray-600 mt-1">*Hanya URL HTTPS. Biarkan kosong untuk Text Logo.</p>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">Deskripsi Footer</label>
+                        <textarea id="siteDesc" rows="3" placeholder="Deskripsi singkat website untuk footer..." class="input-dark" maxlength="500"></textarea>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
 
 <script>
-        // --- 1. SYSTEM STATUS LOGIC (UPDATED: Real Count) ---
-        const CHECK_LIST = [
-            { id: 'netshort', url: '/api/netshort/foryou?page=1' },
-            { id: 'dramabox', url: '/api/dramabox/foryou?page=1' }
-        ];
-
-        // FUNGSI BARU: Mencari Total Count yang Akurat
-        function countDramas(obj) {
-            // Cek apakah ada field total langsung di root atau di dalam data
-            if (obj.total !== undefined) return obj.total;
-            if (obj.totalCount !== undefined) return obj.totalCount;
-            if (obj.data && obj.data.total !== undefined) return obj.data.total;
-            if (obj.data && obj.data.totalCount !== undefined) return obj.data.totalCount;
-
-            // Jika tidak ada field total, hitung manual array listnya (Fallback)
-            let count = 0;
-            function r(o) {
-                if (!o) return;
-                if (Array.isArray(o)) {
-                    // Jika array panjang, kemungkinan ini list filmnya
-                    if(o.length > 5) count += o.length; 
-                    o.forEach(i => r(i));
-                } else if (typeof o === 'object') {
-                    Object.values(o).forEach(v => {
-                        if (typeof v === 'object') r(v);
-                    });
-                }
-            }
-            r(obj);
-            
-            // Jika hasil hitung manual cuma sedikit (misal 10), kemungkinan itu cuma 1 page.
-            // Kita kembalikan angka itu tapi tanpa tanda "+" agar terlihat real.
-            return count > 0 ? count : 0;
-        }
-
-        async function checkProvider(p) {
-            const s = document.getElementById(`status-${p.id}`);
-            const c = document.getElementById(`count-${p.id}`);
-            const pi = document.getElementById(`ping-${p.id}`);
-
-            s.innerHTML = `<span class="status-dot bg-yellow-500 animate-pulse"></span> <span class="text-xs text-yellow-500 font-bold">PING...</span>`;
-            
-            const start = Date.now();
-            try {
-                const res = await fetch(p.url);
-                const d = Date.now() - start;
-
-                if (res.ok) {
-                    const json = await res.json();
-                    
-                    // Update UI
-                    s.innerHTML = `<span class="status-dot dot-green"></span> <span class="text-xs text-green-400 font-bold tracking-wide">ONLINE</span>`;
-                    pi.innerText = d + "ms";
-                    pi.className = d < 200 ? "text-green-400 font-mono font-bold" : d < 500 ? "text-yellow-400 font-mono font-bold" : "text-red-400 font-mono font-bold";
-                    
-                    // Tampilkan jumlah real
-                    c.innerText = countDramas(json); 
-                } else {
-                    throw new Error(res.status);
-                }
-            } catch (e) {
-                s.innerHTML = `<span class="status-dot dot-red"></span> <span class="text-xs text-red-500 font-bold tracking-wide">OFFLINE</span>`;
-                pi.innerText = "TIMEOUT";
-                pi.className = "text-red-500 font-mono font-bold";
-                c.innerText = "0";
-            }
-        }
-
-        function checkAllStatus() { CHECK_LIST.forEach(p => checkProvider(p)); }
+    // --- SECURITY: Session Management ---
+    const SESSION_KEY = 'adminSession';
+    const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+    
+    function isValidSession() {
+        const session = sessionStorage.getItem(SESSION_KEY);
+        if (!session) return false;
         
-        // --- 2. SETTINGS LOGIC (LocalStorage) ---
-        function loadAdminSettings() {
-            const config = JSON.parse(localStorage.getItem('siteConfig')) || { name: 'StreamHub123', tagline: 'Nonton Drama China', desc: 'Platform streaming drama pendek terlengkap.', logo: '' };
-            document.getElementById('siteName').value = config.name;
-            document.getElementById('siteTagline').value = config.tagline;
-            document.getElementById('siteDesc').value = config.desc;
-            document.getElementById('siteLogo').value = config.logo;
-            updateLogoPreview(config.logo);
+        const { timestamp } = JSON.parse(session);
+        const now = Date.now();
+        
+        if (now - timestamp > SESSION_TIMEOUT) {
+            sessionStorage.removeItem(SESSION_KEY);
+            return false;
         }
-        document.getElementById('siteLogo').addEventListener('input', (e) => updateLogoPreview(e.target.value));
-        function updateLogoPreview(url) {
-            const img = document.getElementById('logoPreview');
-            const place = document.getElementById('logoPlaceholder');
-            if (url) { img.src = url; img.classList.remove('hidden'); place.classList.add('hidden'); }
-            else { img.classList.add('hidden'); place.classList.remove('hidden'); }
+        
+        // Refresh session timestamp
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({ timestamp: now }));
+        return true;
+    }
+    
+    function createSession() {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({ timestamp: Date.now() }));
+    }
+    
+    function clearSession() {
+        sessionStorage.removeItem(SESSION_KEY);
+    }
+    
+    // --- SECURITY: Generate CSRF Token ---
+    function getCSRFToken() {
+        let token = sessionStorage.getItem('csrfToken');
+        if (!token) {
+            token = 'csrf_' + Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('csrfToken', token);
         }
-        function saveSettings() {
-            const config = {
-                name: document.getElementById('siteName').value,
-                tagline: document.getElementById('siteTagline').value,
-                desc: document.getElementById('siteDesc').value,
-                logo: document.getElementById('siteLogo').value
-            };
-            localStorage.setItem('siteConfig', JSON.stringify(config));
-            Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Pengaturan website telah disimpan.', background: '#1a1a1a', color: '#fff', confirmButtonColor: '#dc2626' });
+        return token;
+    }
+    
+    // --- LOGIN LOGIC ---
+    async function loginAdmin() {
+        const password = document.getElementById('adminPassword').value.trim();
+        const errorEl = document.getElementById('loginError');
+        
+        if (!password) {
+            errorEl.classList.remove('hidden');
+            errorEl.innerText = 'Password tidak boleh kosong!';
+            return;
         }
-
-        window.addEventListener('load', () => {
+        
+        try {
+            const response = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ password })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                errorEl.classList.add('hidden');
+                createSession();
+                document.getElementById('loginModal').classList.add('hidden');
+                document.getElementById('mainContent').classList.remove('hidden');
+                checkAllStatus();
+                loadAdminSettings();
+                setInterval(checkAllStatus, 30000);
+            } else {
+                errorEl.classList.remove('hidden');
+                errorEl.innerText = 'Password salah!';
+            }
+        } catch (e) {
+            errorEl.classList.remove('hidden');
+            errorEl.innerText = 'Error koneksi server!';
+            console.error(e);
+        }
+    }
+    
+    function logoutAdmin() {
+        clearSession();
+        document.getElementById('mainContent').classList.add('hidden');
+        document.getElementById('loginModal').classList.remove('hidden');
+        document.getElementById('adminPassword').value = '';
+        document.getElementById('loginError').classList.add('hidden');
+    }
+    
+    // --- CHECK AUTHENTICATION ON PAGE LOAD ---
+    window.addEventListener('load', () => {
+        if (!isValidSession()) {
+            document.getElementById('mainContent').classList.add('hidden');
+            document.getElementById('loginModal').classList.remove('hidden');
+        } else {
+            document.getElementById('loginModal').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
             checkAllStatus();
             loadAdminSettings();
             setInterval(checkAllStatus, 30000);
-        });
-    </script>
+        }
+    });
+    
+    // --- SECURITY: Input Validation & Sanitization ---
+    function sanitizeInput(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+    
+    function isValidURL(string) {
+        try {
+            const url = new URL(string);
+            return url.protocol === 'https:';
+        } catch (_) {
+            return false;
+        }
+    }
+    
+    function logoError() {
+        document.getElementById('logoPreview').classList.add('hidden');
+        document.getElementById('logoPlaceholder').classList.remove('hidden');
+    }
+    
+    function updateLogoPreview(url) {
+        const img = document.getElementById('logoPreview');
+        const place = document.getElementById('logoPlaceholder');
+        
+        if (url && isValidURL(url)) {
+            img.src = url;
+            img.classList.remove('hidden');
+            place.classList.add('hidden');
+        } else {
+            img.classList.add('hidden');
+            place.classList.remove('hidden');
+        }
+    }
+    
+    // --- SYSTEM STATUS LOGIC ---
+    const CHECK_LIST = [
+        { id: 'netshort', url: '/api/netshort/foryou?page=1' },
+        { id: 'dramabox', url: '/api/dramabox/foryou?page=1' }
+    ];
+    
+    function countDramas(obj) {
+        if (obj.total !== undefined) return obj.total;
+        if (obj.totalCount !== undefined) return obj.totalCount;
+        if (obj.data && obj.data.total !== undefined) return obj.data.total;
+        if (obj.data && obj.data.totalCount !== undefined) return obj.data.totalCount;
+        
+        let count = 0;
+        function r(o) {
+            if (!o) return;
+            if (Array.isArray(o)) {
+                if(o.length > 5) count += o.length;
+                o.forEach(i => r(i));
+            } else if (typeof o === 'object') {
+                Object.values(o).forEach(v => {
+                    if (typeof v === 'object') r(v);
+                });
+            }
+        }
+        r(obj);
+        return count > 0 ? count : 0;
+    }
+    
+    async function checkProvider(p) {
+        const s = document.getElementById(`status-${p.id}`);
+        const c = document.getElementById(`count-${p.id}`);
+        const pi = document.getElementById(`ping-${p.id}`);
+        
+        s.innerHTML = `<span class="status-dot bg-yellow-500 animate-pulse"></span> <span class="text-xs text-yellow-500 font-bold">PING...</span>`;
+        
+        const start = Date.now();
+        try {
+            const res = await fetch(p.url);
+            const d = Date.now() - start;
+            
+            if (res.ok) {
+                const json = await res.json();
+                s.innerHTML = `<span class="status-dot dot-green"></span> <span class="text-xs text-green-400 font-bold tracking-wide">ONLINE</span>`;
+                pi.innerText = d + "ms";
+                pi.className = d < 200 ? "text-green-400 font-mono font-bold" : d < 500 ? "text-yellow-400 font-mono font-bold" : "text-red-400 font-mono font-bold";
+                c.innerText = countDramas(json);
+            } else {
+                throw new Error(res.status);
+            }
+        } catch (e) {
+            s.innerHTML = `<span class="status-dot dot-red"></span> <span class="text-xs text-red-500 font-bold tracking-wide">OFFLINE</span>`;
+            pi.innerText = "TIMEOUT";
+            pi.className = "text-red-500 font-mono font-bold";
+            c.innerText = "0";
+        }
+    }
+    
+    function checkAllStatus() {
+        if (!isValidSession()) {
+            logoutAdmin();
+            return;
+        }
+        CHECK_LIST.forEach(p => checkProvider(p));
+    }
+    
+    // --- SETTINGS LOGIC (Backend) ---
+    async function loadAdminSettings() {
+        try {
+            const res = await fetch('/api/admin/config');
+            const config = await res.json();
+            
+            document.getElementById('siteName').value = sanitizeInput(config.siteName || 'StreamHub123');
+            document.getElementById('siteTagline').value = sanitizeInput(config.siteDescription || '');
+            document.getElementById('siteDesc').value = sanitizeInput(config.siteDescription || '');
+            document.getElementById('siteLogo').value = config.logoUrl || '';
+            updateLogoPreview(config.logoUrl || '');
+        } catch (e) {
+            console.error('Failed to load settings:', e);
+            // Fallback ke default
+            document.getElementById('siteName').value = 'StreamHub123';
+        }
+    }
+    
+    async function saveSettings() {
+        if (!isValidSession()) {
+            logoutAdmin();
+            return;
+        }
+        
+        const name = document.getElementById('siteName').value.trim();
+        const desc = document.getElementById('siteDesc').value.trim();
+        const logo = document.getElementById('siteLogo').value.trim();
+        
+        // Validasi
+        if (!name) {
+            Swal.fire({ icon: 'error', title: 'Error!', text: 'Judul website tidak boleh kosong.', background: '#1a1a1a', color: '#fff' });
+            return;
+        }
+        
+        if (logo && !isValidURL(logo)) {
+            Swal.fire({ icon: 'error', title: 'Error!', text: 'URL logo harus HTTPS dan valid.', background: '#1a1a1a', color: '#fff' });
+            return;
+        }
+        
+        try {
+            const res = await fetch('/api/admin/update-all', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-Token': getCSRFToken()
+                },
+                body: JSON.stringify({
+                    newName: name,
+                    newDesc: desc,
+                    newLogo: logo,
+                    newApis: ['NetShort', 'DramaBox'],
+                    password: sessionStorage.getItem('adminPassword') // Ambil dari session jika ada
+                })
+            });
+            
+            if (res.ok) {
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Pengaturan website telah disimpan.', background: '#1a1a1a', color: '#fff', confirmButtonColor: '#dc2626' });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error!', text: 'Gagal menyimpan pengaturan.', background: '#1a1a1a', color: '#fff' });
+            }
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Error!', text: 'Koneksi server gagal.', background: '#1a1a1a', color: '#fff' });
+            console.error(e);
+        }
+    }
+</script>
 </body>
 </html>
