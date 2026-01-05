@@ -7,7 +7,7 @@ import * as db from './lib/dramabox.js'; // Import logika Dramabox
 const app = express();
 const PORT = process.env.PORT || 4001;
 
-// 1. Koneksi Database (Jika pakai MongoDB)
+// 1. Koneksi Database (JSON File)
 connectDB();
 
 // 2. Middleware
