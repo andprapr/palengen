@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StreamHub Admin Dashboard</title>
     <!-- Content Security Policy untuk prevent XSS -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; img-src 'self' https: data:; font-src 'self' https:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; img-src 'self' https: data:; font-src 'self' https:;">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
     <style>
@@ -19,6 +19,8 @@
         /* Style Input Custom */
         .input-dark { width: 100%; background-color: #0f0f0f; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; padding: 0.75rem 1rem; color: #e5e7eb; font-size: 0.875rem; transition: all 0.3s; }
         .input-dark:focus { outline: none; border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2); }
+        .btn-login { cursor: pointer; }
+        .btn-login:active { opacity: 0.9; }
     </style>
 </head>
 <body class="bg-[#050505] text-gray-200 font-sans antialiased min-h-screen p-6 md:p-12">
@@ -34,11 +36,11 @@
             
             <div class="mb-6">
                 <label class="block text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">Password Admin</label>
-                <input type="password" id="adminPassword" placeholder="Masukkan password" class="input-dark" onkeypress="if(event.key==='Enter') loginAdmin()">
+                <input type="password" id="adminPassword" placeholder="Masukkan password" class="input-dark" />
                 <p id="loginError" class="text-xs text-red-500 mt-2 hidden">Password salah!</p>
             </div>
             
-            <button onclick="loginAdmin()" class="w-full bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-lg shadow-red-900/20">Login</button>
+            <button id="loginBtn" type="button" class="w-full bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-lg shadow-red-900/20 btn-login">Login</button>
         </div>
     </div>
 
@@ -53,7 +55,7 @@
                 <a href="index.html" target="_blank" class="text-sm text-gray-500 hover:text-white transition flex items-center gap-2 border border-white/10 px-4 py-2 rounded-lg hover:bg-white/5">
                     Lihat Website <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                 </a>
-                <button onclick="logoutAdmin()" class="text-sm text-gray-500 hover:text-red-400 transition flex items-center gap-2 border border-white/10 px-4 py-2 rounded-lg hover:bg-red-900/10">
+                <button id="logoutBtn" type="button" class="text-sm text-gray-500 hover:text-red-400 transition flex items-center gap-2 border border-white/10 px-4 py-2 rounded-lg hover:bg-red-900/10">
                     Logout <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                 </button>
             </div>
@@ -63,7 +65,7 @@
             <section>
                 <div class="flex justify-between items-end mb-6">
                     <div><h2 class="text-xl font-bold text-white">Status Server API</h2><p class="text-gray-500 text-sm mt-1">Monitor kesehatan koneksi provider drama real-time.</p></div>
-                    <button onclick="checkAllStatus()" class="bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-2 border border-white/10 hover:border-white/30"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>Refresh Status</button>
+                    <button id="refreshStatusBtn" type="button" class="bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-2 border border-white/10 hover:border-white/30"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>Refresh Status</button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="glass-panel rounded-2xl p-8 relative overflow-hidden group hover:bg-white/[0.02] transition duration-500">
@@ -101,7 +103,7 @@
                         <h3 class="font-bold text-xl text-white">Pengaturan Website</h3>
                         <p class="text-xs text-gray-500 mt-1">Sesuaikan tampilan depan website Anda.</p>
                     </div>
-                    <button onclick="saveSettings()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-lg shadow-red-900/20 flex items-center gap-2">
+                    <button id="saveSettingsBtn" type="button" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-lg shadow-red-900/20 flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
                         Simpan Perubahan
                     </button>
@@ -121,9 +123,9 @@
                     <div class="md:col-span-2">
                         <label class="block text-xs text-gray-500 mb-2 uppercase tracking-wider font-bold">URL Logo (Opsional)</label>
                         <div class="flex gap-2">
-                            <input type="url" id="siteLogo" placeholder="https://..." class="input-dark flex-1" oninput="updateLogoPreview(this.value)">
+                            <input type="url" id="siteLogo" placeholder="https://..." class="input-dark flex-1">
                             <div class="w-10 h-10 bg-white/5 rounded border border-white/10 flex items-center justify-center shrink-0">
-                                <img id="logoPreview" class="w-8 h-8 object-contain hidden" onerror="logoError()">
+                                <img id="logoPreview" class="w-8 h-8 object-contain hidden">
                                 <span id="logoPlaceholder" class="text-xs text-gray-600">Img</span>
                             </div>
                         </div>
@@ -149,17 +151,21 @@
         const session = sessionStorage.getItem(SESSION_KEY);
         if (!session) return false;
         
-        const { timestamp } = JSON.parse(session);
-        const now = Date.now();
-        
-        if (now - timestamp > SESSION_TIMEOUT) {
-            sessionStorage.removeItem(SESSION_KEY);
+        try {
+            const { timestamp } = JSON.parse(session);
+            const now = Date.now();
+            
+            if (now - timestamp > SESSION_TIMEOUT) {
+                sessionStorage.removeItem(SESSION_KEY);
+                return false;
+            }
+            
+            // Refresh session timestamp
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify({ timestamp: now }));
+            return true;
+        } catch (e) {
             return false;
         }
-        
-        // Refresh session timestamp
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify({ timestamp: now }));
-        return true;
     }
     
     function createSession() {
@@ -184,12 +190,16 @@
     async function loginAdmin() {
         const password = document.getElementById('adminPassword').value.trim();
         const errorEl = document.getElementById('loginError');
+        const loginBtn = document.getElementById('loginBtn');
         
         if (!password) {
             errorEl.classList.remove('hidden');
             errorEl.innerText = 'Password tidak boleh kosong!';
             return;
         }
+        
+        loginBtn.disabled = true;
+        loginBtn.innerText = 'Loading...';
         
         try {
             const response = await fetch('/api/admin/login', {
@@ -217,8 +227,11 @@
             }
         } catch (e) {
             errorEl.classList.remove('hidden');
-            errorEl.innerText = 'Error koneksi server!';
-            console.error(e);
+            errorEl.innerText = 'Error koneksi server: ' + e.message;
+            console.error('Login error:', e);
+        } finally {
+            loginBtn.disabled = false;
+            loginBtn.innerText = 'Login';
         }
     }
     
@@ -230,11 +243,59 @@
         document.getElementById('loginError').classList.add('hidden');
     }
     
-    // --- CHECK AUTHENTICATION ON PAGE LOAD ---
-    window.addEventListener('load', () => {
+    // --- EVENT LISTENERS ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const passwordInput = document.getElementById('adminPassword');
+        const siteLogo = document.getElementById('siteLogo');
+        const refreshStatusBtn = document.getElementById('refreshStatusBtn');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        
+        // Login button
+        if (loginBtn) {
+            loginBtn.addEventListener('click', loginAdmin);
+        }
+        
+        // Password input - Enter key
+        if (passwordInput) {
+            passwordInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    loginAdmin();
+                }
+            });
+        }
+        
+        // Logout button
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', logoutAdmin);
+        }
+        
+        // Refresh status button
+        if (refreshStatusBtn) {
+            refreshStatusBtn.addEventListener('click', checkAllStatus);
+        }
+        
+        // Save settings button
+        if (saveSettingsBtn) {
+            saveSettingsBtn.addEventListener('click', saveSettings);
+        }
+        
+        // Logo input change
+        if (siteLogo) {
+            siteLogo.addEventListener('change', function() {
+                updateLogoPreview(this.value);
+            });
+            siteLogo.addEventListener('input', function() {
+                updateLogoPreview(this.value);
+            });
+        }
+        
+        // Check authentication on load
         if (!isValidSession()) {
             document.getElementById('mainContent').classList.add('hidden');
             document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('adminPassword').focus();
         } else {
             document.getElementById('loginModal').classList.add('hidden');
             document.getElementById('mainContent').classList.remove('hidden');
@@ -252,6 +313,7 @@
     }
     
     function isValidURL(string) {
+        if (!string) return true; // Empty is ok
         try {
             const url = new URL(string);
             return url.protocol === 'https:';
@@ -271,8 +333,12 @@
         
         if (url && isValidURL(url)) {
             img.src = url;
+            img.onerror = logoError;
             img.classList.remove('hidden');
             place.classList.add('hidden');
+        } else if (url && !isValidURL(url)) {
+            img.classList.add('hidden');
+            place.classList.remove('hidden');
         } else {
             img.classList.add('hidden');
             place.classList.remove('hidden');
@@ -286,6 +352,7 @@
     ];
     
     function countDramas(obj) {
+        if (!obj) return 0;
         if (obj.total !== undefined) return obj.total;
         if (obj.totalCount !== undefined) return obj.totalCount;
         if (obj.data && obj.data.total !== undefined) return obj.data.total;
@@ -311,6 +378,8 @@
         const s = document.getElementById(`status-${p.id}`);
         const c = document.getElementById(`count-${p.id}`);
         const pi = document.getElementById(`ping-${p.id}`);
+        
+        if (!s || !c || !pi) return;
         
         s.innerHTML = `<span class="status-dot bg-yellow-500 animate-pulse"></span> <span class="text-xs text-yellow-500 font-bold">PING...</span>`;
         
@@ -374,12 +443,12 @@
         
         // Validasi
         if (!name) {
-            Swal.fire({ icon: 'error', title: 'Error!', text: 'Judul website tidak boleh kosong.', background: '#1a1a1a', color: '#fff' });
+            Swal.fire({ icon: 'error', title: 'Error!', text: 'Judul website tidak boleh kosong.', background: '#1a1a1a', color: '#fff', confirmButtonColor: '#dc2626' });
             return;
         }
         
         if (logo && !isValidURL(logo)) {
-            Swal.fire({ icon: 'error', title: 'Error!', text: 'URL logo harus HTTPS dan valid.', background: '#1a1a1a', color: '#fff' });
+            Swal.fire({ icon: 'error', title: 'Error!', text: 'URL logo harus HTTPS dan valid.', background: '#1a1a1a', color: '#fff', confirmButtonColor: '#dc2626' });
             return;
         }
         
@@ -396,17 +465,17 @@
                     newDesc: desc,
                     newLogo: logo,
                     newApis: ['NetShort', 'DramaBox'],
-                    password: sessionStorage.getItem('adminPassword') // Ambil dari session jika ada
+                    password: 'admin123' // Default password - user harus ubah
                 })
             });
             
             if (res.ok) {
                 Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Pengaturan website telah disimpan.', background: '#1a1a1a', color: '#fff', confirmButtonColor: '#dc2626' });
             } else {
-                Swal.fire({ icon: 'error', title: 'Error!', text: 'Gagal menyimpan pengaturan.', background: '#1a1a1a', color: '#fff' });
+                Swal.fire({ icon: 'error', title: 'Error!', text: 'Gagal menyimpan pengaturan.', background: '#1a1a1a', color: '#fff', confirmButtonColor: '#dc2626' });
             }
         } catch (e) {
-            Swal.fire({ icon: 'error', title: 'Error!', text: 'Koneksi server gagal.', background: '#1a1a1a', color: '#fff' });
+            Swal.fire({ icon: 'error', title: 'Error!', text: 'Koneksi server gagal: ' + e.message, background: '#1a1a1a', color: '#fff', confirmButtonColor: '#dc2626' });
             console.error(e);
         }
     }
