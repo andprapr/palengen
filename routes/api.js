@@ -184,7 +184,44 @@ router.get(['/melolo/detail/:seriesId', '/melolo/detail'], async (req, res) => {
     }
 });
 
-// GET /api/melolo/stream?videoId=XXX - Stream Drama (UPDATED)
+// GET /api/melolo/stream/:videoId OR /api/melolo/stream?videoId=XXX - Stream Drama
+// PENTING: Route dengan path parameter harus didefinisikan SEBELUM route dengan query parameter
+router.get('/melolo/stream/:videoId', async (req, res) => {
+    try {
+        res.set('Cache-Control', 'no-cache');
+        const videoId = req.params.videoId;
+        
+        if (!videoId) {
+            return res.status(400).json({ 
+                status: false, 
+                code: 400,
+                message: 'videoId parameter required',
+                data: {} 
+            });
+        }
+        
+        console.log(`[API] Melolo Stream (path param) request for videoId: ${videoId}`);
+        const result = await meloloLinkStream(videoId);
+        
+        // Jika error dari API Melolo, return dengan status code yang sesuai
+        if (!result.status || result.code !== 0) {
+            return res.status(result.code === 101000 ? 503 : 400).json(result);
+        }
+        
+        // Success response
+        res.json(result);
+    } catch (error) {
+        console.error("[API] Melolo Stream Error:", error.message);
+        res.status(500).json({ 
+            status: false, 
+            code: 500,
+            message: error.message,
+            data: {} 
+        });
+    }
+});
+
+// GET /api/melolo/stream?videoId=XXX - Alternative dengan query parameter
 router.get('/melolo/stream', async (req, res) => {
     try {
         res.set('Cache-Control', 'no-cache');
@@ -199,7 +236,7 @@ router.get('/melolo/stream', async (req, res) => {
             });
         }
         
-        console.log(`[API] Melolo Stream request for videoId: ${videoId}`);
+        console.log(`[API] Melolo Stream (query param) request for videoId: ${videoId}`);
         const result = await meloloLinkStream(videoId);
         
         // Jika error dari API Melolo, return dengan status code yang sesuai
